@@ -13,3 +13,25 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Gradle
+.gradle/
+build/
+
+# Local config
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Generated
+captures/
+.externalNativeBuild/
+
+# Keystore
+*.jks
+*.keystore
