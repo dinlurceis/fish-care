@@ -15,11 +15,11 @@ IoT (ESP32) → Firebase → Android App
 - firebase-functions/: Cloud Functions
 
 ## 👥 Team
-- Hằng: Sensor + Dashboard
-- Dũng: Feeding + History
-- Duy: Automation + Auth + Notification
-- TV4: Network + Charts + AI
-- Công: RTOS + Integration + AI
+- Vũ Thị Thu Hằng: Sensor + Dashboard
+- Phùng Đình Dũng: Feeding + History
+- Mạc Đức Duy: Automation + Auth + Notification
+- Đào Huy Hoàng: Network + Charts + AI
+- Nguyễn Sỹ Công: RTOS + Integration + AI
 
 ## 🚀 Features
 - Real-time monitoring (Temp, TDS, Turbidity)
