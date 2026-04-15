@@ -28,13 +28,13 @@ namespace {
 const char* WIFI_SSID_1 = "Hằng";
 const char* WIFI_PASS_1 = "12345678";
 const char* WIFI_SSID_2 = "Hang";
-const char* WIFI_PASS_2 = "0971397361";
+const char* WIFI_PASS_2 = "12345678";
 
 // Firebase credentials từ code cũ
-const char* FIREBASE_HOST = "https://test-fea1d-default-rtdb.asia-southeast1.firebasedatabase.app";
-const char* FIREBASE_API_KEY = "AIzaSyCRiWwj3IyWB0GNT7lw-zx2g3U5o5Cw8iY";
-const char* USER_EMAIL = "vuthithuhang24cv@gmail.com";
-const char* USER_PASSWORD = "lovecats21.00";
+const char* FIREBASE_HOST = "htn-firebase-12345-default-rtdb.asia-southeast1.firebasedatabase.app";
+const char* FIREBASE_API_KEY = "AIzaSyA-EXAMPLE-KEY-1234567890";
+const char* USER_EMAIL = "abcde@gmail.com";
+const char* USER_PASSWORD = "12345678";
 
 // ─────────────────────────────────────────────────────────
 //  TRẠNG THÁI KẾT NỐI
