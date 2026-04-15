@@ -22,7 +22,7 @@ void AutomationTask(void *pvParameters) {
 
     for (;;) {
         if (xQueueReceive(xQueue_Commands, &currentCommand, 0) == pdPASS) {
-            if (strcmp(currentCommand.type, "guong") == 0) {
+            if (strcmp(currentCommand.type, "quat") == 0) {
                 controlOxygen(currentCommand.state);
                 isOxyRunning = currentCommand.state;
                 isOverrideMode = false;
@@ -30,13 +30,19 @@ void AutomationTask(void *pvParameters) {
         }
 
         if (xQueueReceive(xQueue_SensorData, &currentSensorData, 0) == pdPASS) {
-            if (currentSensorData.temperature > TEMP_THRESHOLD || currentSensorData.water_quality < TDS_CRITICAL) {
-                if (!isOxyRunning) {
-                    controlOxygen(true);
-                    isOxyRunning = true;
-                    isOverrideMode = true;
-                    oxyStartTime = millis();
-                    Serial.println("[EDGE] Kích hoạt quạt nước tự động (Nhiệt độ/Chất lượng nước kém)!");
+            bool highTemp = currentSensorData.temperature > TEMP_THRESHOLD;
+            bool lowQuality = currentSensorData.water_quality < TDS_CRITICAL;
+
+            if ((highTemp || lowQuality) && !isOxyRunning) {
+                controlOxygen(true);
+                isOxyRunning = true;
+                isOverrideMode = true;
+                oxyStartTime = millis();
+
+                if (highTemp) {
+                    Serial.println("Kích hoạt quạt nước tự động do nước quá nóng!");
+                } else if (lowQuality) {
+                    Serial.println("Kích hoạt quạt nước tự động do chất lượng nước kém!");
                 }
             }
         }
@@ -46,7 +52,7 @@ void AutomationTask(void *pvParameters) {
                 controlOxygen(false);
                 isOxyRunning = false;
                 isOverrideMode = false;
-                Serial.println("[EDGE] Đã chạy đủ 15 phút, tắt quạt nước.");
+                Serial.println("Đã chạy đủ 15 phút, tắt quạt nước.");
             }
         }
 
@@ -59,11 +65,11 @@ void controlOxygen(bool state) {
         digitalWrite(MOTOR_A_ENA, HIGH);
         digitalWrite(MOTOR_A_IN1, HIGH);
         digitalWrite(MOTOR_A_IN2, LOW);
-        Serial.println("[OXYGEN] Bật quạt nước");
+        Serial.println("Bật quạt nước");
     } else {
         digitalWrite(MOTOR_A_ENA, LOW);
         digitalWrite(MOTOR_A_IN1, LOW);
         digitalWrite(MOTOR_A_IN2, LOW);
-        Serial.println("[OXYGEN] Tắt quạt nước");
+        Serial.println("Tắt quạt nước");
     }
 }

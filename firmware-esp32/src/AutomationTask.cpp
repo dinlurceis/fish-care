@@ -41,6 +41,23 @@ void automationTaskLoop(void* /*unused*/) {
       }
     }
 
+      if ((highTemp || highTurbidity) && !sOxyOverrideOn) {
+        setOxyMotor(true);
+        sOxyOverrideOn = true;
+        sOxyOverrideStartMs = millis();
+
+        if (highTemp) {
+          Serial.println("Kích hoạt quạt nước tự động do nước quá nóng!");
+        } else if (highTurbidity) {
+          Serial.println("Kích hoạt quạt nước tự động do chất lượng nước kém!");
+        }
+      }
+    }
+
+    if (sOxyOverrideOn && (millis() - sOxyOverrideStartMs >= 15UL * 60UL * 1000UL)) {
+      setOxyMotor(false);
+      sOxyOverrideOn = false;
+      Serial.println("Đã chạy đủ 15 phút, tắt quạt nước.");
     // 2. Xử lý tự động hóa Offline (Edge Logic)
     SensorData latest{};
     if (xQueuePeek(gSensorQueue, &latest, 0) == pdPASS) {
