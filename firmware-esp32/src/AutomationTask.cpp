@@ -33,14 +33,19 @@ void automationTaskLoop(void* /*unused*/) {
         setOxyMotor(true);
         sOxyOverrideOn = true;
         sOxyOverrideStartMs = millis();
-        Serial.println("[AutomationTask] Offline override enabled: Oxy ON for 15 minutes.");
+
+        if (highTemp) {
+          Serial.println("Kích hoạt quạt nước tự động do nước quá nóng!");
+        } else if (highTurbidity) {
+          Serial.println("Kích hoạt quạt nước tự động do chất lượng nước kém!");
+        }
       }
     }
 
     if (sOxyOverrideOn && (millis() - sOxyOverrideStartMs >= 15UL * 60UL * 1000UL)) {
       setOxyMotor(false);
       sOxyOverrideOn = false;
-      Serial.println("[AutomationTask] Offline override timeout reached: Oxy OFF.");
+      Serial.println("Đã chạy đủ 15 phút, tắt quạt nước.");
     }
 
     vTaskDelay(pdMS_TO_TICKS(AUTOMATION_CHECK_INTERVAL_MS));

@@ -181,7 +181,7 @@ void pollControlNode() {
   float feedTarget = 0.0f;
   char mode[12] = "gram";
 
-  root->get(field, "guong");
+  root->get(field, "quat");
   if (field.success) {
     oxyState = field.to<bool>();
   }
