@@ -1,18 +1,34 @@
 #include <Arduino.h>
+#include "common.h"
+#include "automation.h"
 
-// put function declarations here:
-int myFunction(int, int);
+QueueHandle_t xQueue_SensorData;
+QueueHandle_t xQueue_Commands;
 
 void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+  Serial.begin(115200);
+
+  xQueue_SensorData = xQueueCreate(10, sizeof(SensorData));
+  xQueue_Commands = xQueueCreate(10, sizeof(ControlCommand));
+
+  if (xQueue_SensorData == NULL || xQueue_Commands == NULL) {
+    Serial.println("Lỗi khởi tạo Queue!");
+    return;
+  }
+
+  xTaskCreatePinnedToCore(
+    AutomationTask,
+    "AutomationTask",
+    4096,
+    NULL,
+    1,
+    NULL,
+    1
+  );
+
+  Serial.println("Hệ thống Fish-Care đã sẵn sàng!");
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
-
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+  vTaskDelay(pdMS_TO_TICKS(1000));
 }
