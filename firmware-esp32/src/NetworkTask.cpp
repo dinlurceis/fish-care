@@ -1,297 +1,362 @@
 #include "NetworkTask.h"
-
-#include <cstring>
-
-#include <Firebase_ESP_Client.h>
 #include <WiFi.h>
-#include <esp_system.h>
+#include <FirebaseESP32.h>
+#include <esp_task_wdt.h>
+#include <time.h>
+
+// ============================================================
+//  NETWORKTASK - Kết nối WiFi, Firebase, Retry logic
+//  Chịu trách nhiệm: Hoàng
+//  Chi tiết: WiFi retry exponential, Firebase sync, WDT
+// ============================================================
+
+// ─────────────────────────────────────────────────────────
+//  FIREBASE SDK - GLOBAL (chia sẻ giữa NetworkTask & FeedingTask)
+// ─────────────────────────────────────────────────────────
+FirebaseData fbData;
+FirebaseConfig fbConfig;
+FirebaseAuth fbAuth;
+
+// ─────────────────────────────────────────────────────────
+//  TASK HANDLE
+// ─────────────────────────────────────────────────────────
+TaskHandle_t s_TaskHandle = nullptr;
 
 namespace {
-TaskHandle_t sTaskHandle = nullptr;
 
-FirebaseData sFbdo;
-FirebaseAuth sAuth;
-FirebaseConfig sFirebaseConfig;
+// WiFi credentials từ code cũ
+const char* WIFI_SSID_1 = "Hằng";
+const char* WIFI_PASS_1 = "12345678";
+const char* WIFI_SSID_2 = "Hang";
+const char* WIFI_PASS_2 = "0971397361";
 
-bool sWiFiConnected = false;
-bool sFirebaseInitialized = false;
-uint32_t sLastReconnectAttemptMs = 0;
-uint32_t sCurrentRetryDelayMs = WIFI_RETRY_BASE_MS;
+// Firebase credentials từ code cũ
+const char* FIREBASE_HOST = "https://test-fea1d-default-rtdb.asia-southeast1.firebasedatabase.app";
+const char* FIREBASE_API_KEY = "AIzaSyCRiWwj3IyWB0GNT7lw-zx2g3U5o5Cw8iY";
+const char* USER_EMAIL = "vuthithuhang24cv@gmail.com";
+const char* USER_PASSWORD = "lovecats21.00";
 
-bool sLastOxyState = false;
-bool sLastFeedState = false;
-float sLastFeedTarget = 0.0f;
-char sLastFeedMode[12] = "gram";
+// ─────────────────────────────────────────────────────────
+//  TRẠNG THÁI KẾT NỐI
+// ─────────────────────────────────────────────────────────
+bool s_WiFiConnected = false;
+bool s_FirebaseReady = false;
 
-struct CachedSensorFrame {
-  SensorData payload;
-  uint8_t retryCount;
-};
+// WiFi retry: exponential backoff (2s → 4s → 8s → ... → max 30s)
+unsigned long s_LastRetryTime = 0;
+unsigned long s_RetryDelay = 2000;  // Bắt đầu 2 giây
 
-CachedSensorFrame sOfflineCache[OFFLINE_CACHE_CAPACITY];
-size_t sCacheHead = 0;
-size_t sCacheTail = 0;
-size_t sCacheCount = 0;
+// ─────────────────────────────────────────────────────────
+//  HÀM KẾT NỐI WIFI
+// ─────────────────────────────────────────────────────────
 
-portMUX_TYPE sWdtMux = portMUX_INITIALIZER_UNLOCKED;
-volatile uint8_t sWdtSecondsWithoutLoop = 0;
-volatile bool sWdtExpired = false;
-hw_timer_t* sWdtTimer = nullptr;
-
-void IRAM_ATTR networkWdtISR() {
-  portENTER_CRITICAL_ISR(&sWdtMux);
-  if (sWdtSecondsWithoutLoop < 255) {
-    ++sWdtSecondsWithoutLoop;
-  }
-  if (sWdtSecondsWithoutLoop >= NETWORK_WDT_TIMEOUT_SEC) {
-    sWdtExpired = true;
-  }
-  portEXIT_CRITICAL_ISR(&sWdtMux);
-}
-
-void resetWdtHeartbeat() {
-  portENTER_CRITICAL(&sWdtMux);
-  sWdtSecondsWithoutLoop = 0;
-  portEXIT_CRITICAL(&sWdtMux);
-}
-
-bool isWdtExpired() {
-  bool expired = false;
-  portENTER_CRITICAL(&sWdtMux);
-  expired = sWdtExpired;
-  portEXIT_CRITICAL(&sWdtMux);
-  return expired;
-}
-
-void initWatchdogInterrupt() {
-  sWdtTimer = timerBegin(0, 80, true);
-  timerAttachInterrupt(sWdtTimer, &networkWdtISR, true);
-  timerAlarmWrite(sWdtTimer, 1000000ULL, true);
-  timerAlarmEnable(sWdtTimer);
-}
-
-void cachePush(const SensorData& frame) {
-  if (sCacheCount >= OFFLINE_CACHE_CAPACITY) {
-    // Drop oldest frame first to keep newest readings available.
-    sCacheHead = (sCacheHead + 1) % OFFLINE_CACHE_CAPACITY;
-    --sCacheCount;
-  }
-
-  sOfflineCache[sCacheTail] = CachedSensorFrame{frame, 0};
-  sCacheTail = (sCacheTail + 1) % OFFLINE_CACHE_CAPACITY;
-  ++sCacheCount;
-}
-
-CachedSensorFrame* cacheFront() {
-  if (sCacheCount == 0) {
-    return nullptr;
-  }
-  return &sOfflineCache[sCacheHead];
-}
-
-void cachePop() {
-  if (sCacheCount == 0) {
-    return;
-  }
-  sCacheHead = (sCacheHead + 1) % OFFLINE_CACHE_CAPACITY;
-  --sCacheCount;
-}
-
-bool sendSensorToFirebase(const SensorData& data) {
-  if (!sFirebaseInitialized) {
-    return false;
-  }
-
-  FirebaseJson payload;
-  payload.set("temperature", data.temperatureC);
-  payload.set("water_quality", data.tds);
-  payload.set("ts300b", data.turbidityRaw);
-  payload.set("weight", data.weightGram);
-
-  if (xSemaphoreTake(gFirebaseMutex, pdMS_TO_TICKS(300)) != pdTRUE) {
-    return false;
-  }
-
-  const bool ok = Firebase.RTDB.updateNode(&sFbdo, "/aquarium", &payload);
-  xSemaphoreGive(gFirebaseMutex);
-
-  return ok;
-}
-
-void publishCachedData() {
-  CachedSensorFrame* front = cacheFront();
-  if (front == nullptr) {
-    return;
-  }
-
-  if (sendSensorToFirebase(front->payload)) {
-    cachePop();
-  } else {
-    if (front->retryCount < 255) {
-      ++front->retryCount;
+void connectWiFi() {
+    Serial.println("[NetworkTask] Cố gắng kết nối WiFi...");
+    
+    // Cách 1: Thử SSID thứ nhất
+    WiFi.begin(WIFI_SSID_1, WIFI_PASS_1);
+    Serial.printf("[NetworkTask] Thử: '%s'\n", WIFI_SSID_1);
+    
+    int retries = 0;
+    while (WiFi.status() != WL_CONNECTED && retries < 20) {
+        delay(500);
+        Serial.print(".");
+        retries++;
     }
-  }
-}
-
-void pushCommandIfChanged(bool oxyState, bool feedState, float feedTarget, const char* mode) {
-  if (oxyState != sLastOxyState) {
-    CommandMessage cmd{};
-    cmd.type = CommandType::SET_OXY;
-    cmd.boolValue = oxyState;
-    xQueueSend(gCommandQueue, &cmd, 0);
-    sLastOxyState = oxyState;
-  }
-
-  if (feedState != sLastFeedState || fabsf(feedTarget - sLastFeedTarget) > 0.01f || strncmp(mode, sLastFeedMode, sizeof(sLastFeedMode)) != 0) {
-    CommandMessage cmd{};
-    cmd.type = CommandType::START_FEED;
-    cmd.boolValue = feedState;
-    cmd.floatValue = feedTarget;
-    strncpy(cmd.mode, mode, sizeof(cmd.mode) - 1);
-    cmd.mode[sizeof(cmd.mode) - 1] = '\0';
-    xQueueSend(gCommandQueue, &cmd, 0);
-
-    sLastFeedState = feedState;
-    sLastFeedTarget = feedTarget;
-    strncpy(sLastFeedMode, mode, sizeof(sLastFeedMode) - 1);
-    sLastFeedMode[sizeof(sLastFeedMode) - 1] = '\0';
-  }
-}
-
-void pollControlNode() {
-  if (!sFirebaseInitialized) {
-    return;
-  }
-
-  if (xSemaphoreTake(gFirebaseMutex, pdMS_TO_TICKS(500)) != pdTRUE) {
-    return;
-  }
-
-  bool ok = Firebase.RTDB.getJSON(&sFbdo, "/aquarium/control");
-  if (!ok) {
-    xSemaphoreGive(gFirebaseMutex);
-    return;
-  }
-
-  FirebaseJson* root = sFbdo.to<FirebaseJson*>();
-  FirebaseJsonData field;
-
-  bool oxyState = false;
-  bool feedState = false;
-  float feedTarget = 0.0f;
-  char mode[12] = "gram";
-
-  root->get(field, "quat");
-  if (field.success) {
-    oxyState = field.to<bool>();
-  }
-
-  root->get(field, "thucan/state");
-  if (field.success) {
-    feedState = field.to<bool>();
-  }
-
-  root->get(field, "thucan/target_gram");
-  if (field.success) {
-    feedTarget = field.to<float>();
-  }
-
-  root->get(field, "thucan/mode");
-  if (field.success && field.typeNum == FirebaseJson::JSON_STRING) {
-    const String modeString = field.to<String>();
-    modeString.toCharArray(mode, sizeof(mode));
-  }
-
-  xSemaphoreGive(gFirebaseMutex);
-  pushCommandIfChanged(oxyState, feedState, feedTarget, mode);
-}
-
-void connectFirebaseIfNeeded() {
-  if (sFirebaseInitialized) {
-    return;
-  }
-
-  sFirebaseConfig.api_key = FIREBASE_API_KEY;
-  sFirebaseConfig.database_url = FIREBASE_DB_URL;
-  Firebase.reconnectNetwork(true);
-  Firebase.begin(&sFirebaseConfig, &sAuth);
-  sFirebaseInitialized = true;
-}
-
-void maintainWiFiConnection() {
-  if (WiFi.status() == WL_CONNECTED) {
-    sWiFiConnected = true;
-    sCurrentRetryDelayMs = WIFI_RETRY_BASE_MS;
-    return;
-  }
-
-  sWiFiConnected = false;
-
-  const uint32_t now = millis();
-  if (now - sLastReconnectAttemptMs < sCurrentRetryDelayMs) {
-    return;
-  }
-  sLastReconnectAttemptMs = now;
-
-  Serial.printf("[NetworkTask] Reconnecting WiFi... next retry backoff=%lu ms\n", static_cast<unsigned long>(sCurrentRetryDelayMs));
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  const uint32_t connectStart = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - connectStart < WIFI_CONNECT_TIMEOUT_MS) {
-    vTaskDelay(pdMS_TO_TICKS(300));
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    sWiFiConnected = true;
-    sCurrentRetryDelayMs = WIFI_RETRY_BASE_MS;
-    Serial.printf("[NetworkTask] WiFi connected. IP=%s\n", WiFi.localIP().toString().c_str());
-  } else {
-    sCurrentRetryDelayMs = min(sCurrentRetryDelayMs * 2UL, WIFI_RETRY_MAX_MS);
-  }
-}
-
-void networkTaskLoop(void* /*unused*/) {
-  WiFi.mode(WIFI_STA);
-  connectFirebaseIfNeeded();
-  initWatchdogInterrupt();
-
-  for (;;) {
-    resetWdtHeartbeat();
-
-    if (isWdtExpired()) {
-      Serial.println("[NetworkTask] WDT interrupt fired: task appears blocked. Restarting MCU...");
-      delay(50);
-      esp_restart();
-    }
-
-    maintainWiFiConnection();
-
-    SensorData fresh{};
-    if (xQueueReceive(gSensorQueue, &fresh, pdMS_TO_TICKS(100)) == pdPASS) {
-      if (sWiFiConnected) {
-        if (!sendSensorToFirebase(fresh)) {
-          cachePush(fresh);
+    
+    // Nếu thất bại, thử SSID thứ hai
+    if (WiFi.status() != WL_CONNECTED) {
+        WiFi.begin(WIFI_SSID_2, WIFI_PASS_2);
+        Serial.printf("\n[NetworkTask] Thử: '%s'\n", WIFI_SSID_2);
+        
+        retries = 0;
+        while (WiFi.status() != WL_CONNECTED && retries < 20) {
+            delay(500);
+            Serial.print(".");
+            retries++;
         }
-      } else {
-        cachePush(fresh);
-      }
     }
-
-    if (sWiFiConnected) {
-      publishCachedData();
-      pollControlNode();
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        s_WiFiConnected = true;
+        s_RetryDelay = 2000;  // Reset retry delay
+        Serial.printf("\n[NetworkTask] ✓ WiFi kết nối: %s\n", WiFi.SSID().c_str());
+        Serial.printf("[NetworkTask] IP: %s\n", WiFi.localIP().toString().c_str());
+    } else {
+        s_WiFiConnected = false;
+        Serial.println("\n[NetworkTask] ✗ Không kết nối được WiFi");
     }
-
-    vTaskDelay(pdMS_TO_TICKS(200));
-  }
 }
+
+// ─────────────────────────────────────────────────────────
+//  HÀM KHỞI TẠO FIREBASE
+// ─────────────────────────────────────────────────────────
+
+void initFirebase() {
+    Serial.println("[NetworkTask] Khởi tạo Firebase...");
+    
+    // Cấu hình Firebase
+    fbConfig.database_url = FIREBASE_HOST;
+    fbConfig.api_key = FIREBASE_API_KEY;
+    fbAuth.user.email = USER_EMAIL;
+    fbAuth.user.password = USER_PASSWORD;
+    
+    // Bắt đầu Firebase
+    Firebase.begin(&fbConfig, &fbAuth);
+    Firebase.reconnectNetwork(true);
+    
+    s_FirebaseReady = true;
+    Serial.println("[NetworkTask] ✓ Firebase khởi tạo xong");
+}
+
+// ─────────────────────────────────────────────────────────
+//  HÀM ĐỒ THỐNG KÊ DỮ LIỆU LÊN FIREBASE
+// ─────────────────────────────────────────────────────────
+
+void syncSensorDataToFirebase(const SensorData_t& data) {
+    if (!s_FirebaseReady || !Firebase.ready()) {
+        return;
+    }
+    
+    // Đẩy dữ liệu cảm biến lên Firebase
+    Firebase.setFloat(fbData, "/aquarium/temperature", data.temperature);
+    Firebase.setFloat(fbData, "/aquarium/water_quality", data.tds);
+    Firebase.setInt(fbData, "/aquarium/ts300b", data.turbidity);
+    if (data.weight > 0) {
+        Firebase.setFloat(fbData, "/aquarium/weight", data.weight);
+    }
+    
+    // Debug
+    Serial.printf("[NetworkTask] Firebase sync: Temp=%.1f, TDS=%.1f, Turbidity=%d\n",
+                  data.temperature, data.tds, data.turbidity);
+}
+
+// ─────────────────────────────────────────────────────────
+//  HÀM ĐỌCỆNH TỪ FIREBASE
+// ─────────────────────────────────────────────────────────
+
+void pollCommandsFromFirebase() {
+    if (!s_FirebaseReady || !Firebase.ready() || !xQueue_Commands) {
+        return;
+    }
+    
+    // ── Đọc lệnh Oxy (guồng) ──
+    if (Firebase.getBool(fbData, "/aquarium/control/guong")) {
+        bool oxyState = fbData.boolData();
+        CommandData_t cmd = {
+            .type = oxyState ? CMD_GUONG_ON : CMD_GUONG_OFF,
+            .value = 0,
+            .timestamp = millis()
+        };
+        xQueueSend(xQueue_Commands, &cmd, 0);
+        Serial.printf("[NetworkTask] CMD_GUONG: %s\n", oxyState ? "ON" : "OFF");
+    }
+    
+    // ── Đọc lệnh Feeding (cám) ──
+    String feedMode = "";
+    if (Firebase.getString(fbData, "/aquarium/control/thucan/mode")) {
+        feedMode = fbData.stringData();
+    }
+    
+    bool feedState = false;
+    if (Firebase.getBool(fbData, "/aquarium/control/thucan/state")) {
+        feedState = fbData.boolData();
+    }
+    
+    float targetGram = 0;
+    if (Firebase.getFloat(fbData, "/aquarium/control/thucan/target_gram")) {
+        targetGram = fbData.floatData();
+    }
+    
+    // Auto mode
+    if (feedMode == "auto") {
+        CommandData_t cmd = {
+            .type = feedState ? CMD_THUCAN_AUTO : CMD_THUCAN_AUTO,  // Trạng thái ON/OFF qua state
+            .value = feedState ? 1.0f : 0.0f,
+            .timestamp = millis()
+        };
+        xQueueSend(xQueue_Commands, &cmd, 0);
+        Serial.printf("[NetworkTask] CMD_THUCAN_AUTO: state=%d\n", feedState);
+    }
+    // Gram mode
+    else if (feedMode == "gram") {
+        CommandData_t cmd = {
+            .type = CMD_THUCAN_GRAM,
+            .value = targetGram,  // Gram amount
+            .timestamp = millis()
+        };
+        xQueueSend(xQueue_Commands, &cmd, 0);
+        Serial.printf("[NetworkTask] CMD_THUCAN_GRAM: target=%.1fg\n", targetGram);
+    }
+    // Manual mode
+    else if (feedMode == "manual") {
+        CommandData_t cmd = {
+            .type = CMD_THUCAN_MANUAL,
+            .value = feedState ? 1.0f : 0.0f,
+            .timestamp = millis()
+        };
+        xQueueSend(xQueue_Commands, &cmd, 0);
+        Serial.printf("[NetworkTask] CMD_THUCAN_MANUAL: state=%d\n", feedState);
+    }
+}
+
+// ─────────────────────────────────────────────────────────
+//  TASK LOOP CHÍNH
+// ─────────────────────────────────────────────────────────
+
+void networkTaskLoop(void* unused) {
+    // ───── Khởi tạo ─────
+    Serial.println("[NetworkTask] Bắt đầu khởi tạo...");
+    
+    // Đăng ký vào Watchdog
+    esp_task_wdt_add(NULL);
+    
+    // ───── Vòng lặp chính ─────
+    for (;;) {
+        
+        // ════════════════════════════════════════
+        //  1. KIỂM TRA & KẾT NỐI WIFI
+        // ════════════════════════════════════════
+        
+        if (WiFi.status() != WL_CONNECTED) {
+            // WiFi đứt - cố tái kết nối
+            if (millis() - s_LastRetryTime > s_RetryDelay) {
+                Serial.printf("[NetworkTask] ⚠️  WiFi đứt - Retry sau %lums...\n", s_RetryDelay);
+                
+                connectWiFi();
+                s_LastRetryTime = millis();
+                
+                // Exponential backoff: tăng delay lên
+                uint32_t newDelay = s_RetryDelay * 2;
+                s_RetryDelay = (newDelay > WIFI_RETRY_MAX_MS) ? WIFI_RETRY_MAX_MS : newDelay;
+            }
+            
+            // Set flag WiFi DOWN cho AutomationTask (edge logic)
+            isWiFiConnected = false;
+            
+        } else {
+            // WiFi còn kết nối
+            isWiFiConnected = true;
+            
+            // ════════════════════════════════════════
+            //  2. KHỞI TẠO TIME NTP (lần đầu tiên)
+            // ════════════════════════════════════════
+            
+            static bool timeConfigured = false;
+            if (!timeConfigured) {
+                configTime(7 * 3600, 0, "pool.ntp.org");  // UTC+7 (Vietnam)
+                // Chờ time được sync (timeout 5 giây)
+                int syncRetries = 0;
+                while (time(nullptr) < 24 * 3600 && syncRetries < 50) {  // < 1 ngày sau epoch = chưa sync
+                    delay(100);
+                    syncRetries++;
+                }
+                if (time(nullptr) > 24 * 3600) {
+                    timeConfigured = true;
+                    Serial.printf("[NetworkTask] ✓ NTP time synced: %lu\n", time(nullptr));
+                } else {
+                    Serial.println("[NetworkTask] ⚠️  NTP time sync timeout");
+                }
+            }
+            
+            // ════════════════════════════════════════
+            //  3. KHỞI TẠO FIREBASE (lần đầu tiên)
+            // ════════════════════════════════════════
+            
+            if (!s_FirebaseReady) {
+                initFirebase();
+            }
+            
+            // ════════════════════════════════════════
+            //  4. ĐỒ THỐNG KÊ DỮ LIỆU CẢM BIẾN
+            // ════════════════════════════════════════
+            
+            SensorData_t sensorData = {0};
+            if (xQueuePeek(xQueue_SensorData, &sensorData, 0) == pdPASS) {
+                syncSensorDataToFirebase(sensorData);
+            }
+            
+            // ════════════════════════════════════════
+            //  5. ĐỌC LỆNH TỪ FIREBASE
+            // ════════════════════════════════════════
+            
+            pollCommandsFromFirebase();
+        }
+        
+        // ───── Feed Watchdog (bảo vệ NTask treo) ─────
+        // Nếu NTask treo quá 20s mạch sẽ tự reset
+        esp_task_wdt_reset();
+        
+        // ───── Debug Serial ─────
+        Serial.printf("[NetworkTask] WiFi=%s | Firebase=%s\n",
+                      s_WiFiConnected ? "ON" : "OFF",
+                      s_FirebaseReady && Firebase.ready() ? "OK" : "DOWN");
+        
+        // ───── Delay ─────
+        vTaskDelay(pdMS_TO_TICKS(2000));  // Check mỗi 2 giây
+    }
+}
+
 }  // namespace
 
-void startNetworkTask(UBaseType_t priority, uint16_t stackSize) {
-  xTaskCreatePinnedToCore(networkTaskLoop, "NetworkTask", stackSize, nullptr, priority, &sTaskHandle, 0);
+// ============================================================
+//  HÀM PUBLIC
+// ============================================================
+
+void NetworkTask_init(UBaseType_t priority, uint16_t stackSize) {
+    Serial.println("[NetworkTask_init] Tạo FreeRTOS task...");
+    
+    BaseType_t xReturned = xTaskCreatePinnedToCore(
+        networkTaskLoop,          // Hàm task
+        "NetworkTask",            // Tên task
+        stackSize,                // Stack size (8KB vì Firebase dùng bộ nhớ)
+        nullptr,                  // Parameter
+        priority,                 // Priority (4 = Highest)
+        &s_TaskHandle,            // Handle output
+        0                         // Core 0 (WiFi)
+    );
+    
+    if (xReturned == pdPASS) {
+        Serial.println("[NetworkTask_init] ✓ Task tạo thành công");
+    } else {
+        Serial.println("[NetworkTask_init] ✗ Lỗi tạo task!");
+    }
 }
 
-bool NetworkTask_IsOnline() {
-  return sWiFiConnected;
+bool NetworkTask_IsWiFiConnected() {
+    return s_WiFiConnected;
+}
+
+bool NetworkTask_IsFirebaseConnected() {
+    return s_FirebaseReady && Firebase.ready();
+}
+
+void NetworkTask_LogFeedHistory(float grams, const String& mode, const String& timeStr) {
+    if (!s_FirebaseReady || !Firebase.ready()) {
+        Serial.printf("[NetworkTask] ⚠️  Firebase not ready, skipping log write\n");
+        return;
+    }
+    
+    // Đọc counter hiện tại từ /logs/counter
+    int logCounter = 1;
+    if (Firebase.getInt(fbData, "/logs/counter")) {
+        logCounter = fbData.intData();
+    }
+    
+    // Tạo path cho log mới: /logs/log{counter}
+    String logPath = "/logs/log" + String(logCounter);
+    
+    // Ghi thông tin cho ăn
+    if (Firebase.setFloat(fbData, logPath.concat("/gram"), grams) &&
+        Firebase.setString(fbData, logPath.concat("/mode"), mode) &&
+        Firebase.setString(fbData, logPath.concat("/time"), timeStr)) {
+        
+        // Tăng counter cho log tiếp theo
+        Firebase.setInt(fbData, "/logs/counter", logCounter + 1);
+        
+        Serial.printf("[NetworkTask] ✓ Feed log saved: log%d (%.1fg, %s, %s)\n", 
+                     logCounter, grams, mode.c_str(), timeStr.c_str());
+    } else {
+        Serial.printf("[NetworkTask] ⚠️  Failed to write feed log: %s\n", fbData.errorReason().c_str());
+    }
 }

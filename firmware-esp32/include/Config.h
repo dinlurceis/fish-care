@@ -1,12 +1,10 @@
 #pragma once
 
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+#include <freertos/semphr.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-
-// Pins from PROJECT_CONTEXT.md - keep these fixed to match wired hardware.
 constexpr int PIN_DS18B20 = 18;
 constexpr int PIN_TDS_ADC = 34;
 constexpr int PIN_TURBIDITY_ADC = 32;
@@ -40,26 +38,42 @@ constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 10000;
 constexpr uint8_t NETWORK_WDT_TIMEOUT_SEC = 20;
 constexpr uint8_t OFFLINE_CACHE_CAPACITY = 32;
 
-struct SensorData {
-  float temperatureC;
-  float tds;
-  int turbidityRaw;
-  float weightGram;
-  uint32_t timestampMs;
-};
+// ============================================================
+//  COMMAND DATA STRUCTURE - Firebase → ESP32 Control
+//  Hoàng (NetworkTask) WRITE → Dũng (FeedingTask) + Duy (AutomationTask) READ
+// ============================================================
+typedef enum {
+    CMD_GUONG_ON = 1,      // Bật oxy motor (Motor A)
+    CMD_GUONG_OFF = 2,     // Tắt oxy motor
+    CMD_THUCAN_GRAM = 3,   // Nhả cám theo gram
+    CMD_THUCAN_MANUAL = 4, // Nhả cám manual (manual on/off)
+    CMD_THUCAN_AUTO = 5,   // Nhả cám auto mode
+    CMD_RESET = 6          // Reset mạch
+} CommandType_e;
 
-enum class CommandType : uint8_t {
-  SET_OXY = 0,
-  START_FEED = 1,
-};
+typedef struct {
+    CommandType_e type;    // Loại lệnh
+    float value;           // Giá trị kèm theo (ví dụ: gram cần nhả)
+    uint32_t timestamp;    // Thời điểm lệnh được tạo
+} CommandData_t;
 
-struct CommandMessage {
-  CommandType type;
-  bool boolValue;
-  float floatValue;
-  char mode[12];
-};
+// ============================================================
+//  CẤU TRÚC DỮ LIỆU CẢM BIẾN - Shared payload giữa các Task
+//  Hằng (SensorTask) WRITE  →  Hoàng (NetworkTask) READ
+//                           →  Duy   (AutomationTask) READ
+// ============================================================
+typedef struct {
+    float temperature;   // °C  - DS18B20 (GPIO 18), OneWire
+    float tds;           // ppm - TDS analog (GPIO 34), direct ADC read
+    int   turbidity;     // raw 0-4095 - TS-300B (GPIO 32), direct ADC read
+    float weight;        // grams - LoadCell (cập nhật bởi FeedingTask)
+    uint32_t timestamp;  // millis() lúc đọc xong
+} SensorData_t;
 
-extern QueueHandle_t gSensorQueue;
-extern QueueHandle_t gCommandQueue;
-extern SemaphoreHandle_t gFirebaseMutex;
+// ============================================================
+//  EXTERN DECLARATIONS - Công khởi tạo, các task khác dùng
+// ============================================================
+extern QueueHandle_t xQueue_SensorData;
+extern QueueHandle_t xQueue_Commands;
+extern SemaphoreHandle_t xMutex_Firebase;
+extern volatile bool isWiFiConnected;
