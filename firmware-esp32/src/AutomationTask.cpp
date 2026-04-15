@@ -7,6 +7,9 @@ bool sOxyRunning = false;
 bool sOverrideMode = false;
 uint32_t sOverrideStartMs = 0;
 
+bool sOxyOverrideOn = false;
+uint32_t sOxyOverrideStartMs = 0;
+
 void setOxyMotor(bool on) {
   if (on) {
     digitalWrite(PIN_OXY_EN, HIGH);
