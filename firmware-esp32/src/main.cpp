@@ -1,32 +1,34 @@
 #include <Arduino.h>
-#include "common.h"
-#include "automation.h"
+#include "Config.h"
+#include "AutomationTask.h"
+#include "FeedingTask.h"
+#include "NetworkTask.h"
+#include "SensorTask.h"
 
-QueueHandle_t xQueue_SensorData;
-QueueHandle_t xQueue_Commands;
+QueueHandle_t gSensorQueue = nullptr;
+QueueHandle_t gCommandQueue = nullptr;
+SemaphoreHandle_t gFirebaseMutex = nullptr;
 
 void setup() {
   Serial.begin(115200);
+  delay(300);
 
-  xQueue_SensorData = xQueueCreate(10, sizeof(SensorData));
-  xQueue_Commands = xQueueCreate(10, sizeof(ControlCommand));
+  gSensorQueue = xQueueCreate(SENSOR_QUEUE_LENGTH, sizeof(SensorData));
+  gCommandQueue = xQueueCreate(COMMAND_QUEUE_LENGTH, sizeof(CommandMessage));
+  gFirebaseMutex = xSemaphoreCreateMutex();
 
-  if (xQueue_SensorData == NULL || xQueue_Commands == NULL) {
-    Serial.println("Lỗi khởi tạo Queue!");
-    return;
+  if (gSensorQueue == nullptr || gCommandQueue == nullptr || gFirebaseMutex == nullptr) {
+    Serial.println("[BOOT] Queue/Mutex init failed. Restarting...");
+    delay(1000);
+    ESP.restart();
   }
 
-  xTaskCreatePinnedToCore(
-    AutomationTask,
-    "AutomationTask",
-    4096,
-    NULL,
-    1,
-    NULL,
-    1
-  );
+  startNetworkTask(4);
+  startFeedingTask(3);
+  startSensorTask(2);
+  startAutomationTask(1);
 
-  Serial.println("Hệ thống Fish-Care đã sẵn sàng!");
+  Serial.println("[BOOT] Fish-Care system started with Fan/Oxy control logic.");
 }
 
 void loop() {
