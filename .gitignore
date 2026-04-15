@@ -21,3 +21,5 @@ yarn-error.log*
 # ===== OS =====
 *.swp
 *.swo
+
+PROJECT_CONTEXT.md
