@@ -16,6 +16,7 @@ TaskHandle_t s_TaskHandle = nullptr;
 bool s_OxyRunning = false;
 bool s_EdgeOverrideActive = false;  // Flag: đang chạy edge logic
 unsigned long s_EdgeOverrideStartTime = 0;
+unsigned long s_LastDebugPrintTime = 0;  // ← Timer để giảm spam log
 
 // Edge Logic thresholds
 const float TEMP_THRESHOLD_HIGH = 32.0f;       // °C - Nước quá nóng
@@ -128,14 +129,17 @@ void automationTaskLoop(void* unused) {
             }
         }
         
-        // ───── Debug Serial ─────
-        Serial.printf("[AutomationTask] WiFi=%s | Oxy=%s | EdgeOverride=%s\n",
-                      isWiFiConnected ? "ON" : "OFF",
-                      s_OxyRunning ? "ON" : "OFF",
-                      s_EdgeOverrideActive ? "ACTIVE" : "INACTIVE");
+        // ───── Debug Serial (Mỗi 5 giây) ─────
+        if (millis() - s_LastDebugPrintTime > 5000) {
+            Serial.printf("[AutomationTask] WiFi=%s | Oxy=%s | EdgeOverride=%s\n",
+                          isWiFiConnected ? "ON" : "OFF",
+                          s_OxyRunning ? "ON" : "OFF",
+                          s_EdgeOverrideActive ? "ACTIVE" : "INACTIVE");
+            s_LastDebugPrintTime = millis();
+        }
         
         // ───── Delay ─────
-        vTaskDelay(pdMS_TO_TICKS(10000));  // Check mỗi 10 giây
+        vTaskDelay(pdMS_TO_TICKS(AUTOMATION_CHECK_INTERVAL_MS));  // ← Dùng config (50ms thay vì 10s)
     }
 }
 

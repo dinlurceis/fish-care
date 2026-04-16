@@ -4,7 +4,7 @@
 #include "sensors/SensorTypes.h"
 
 // ============================================================
-//  FEEDINGTASK - Điều khiển động cơ nhả cám & LoadCell
+//  FEEDINGTASK - Điều khiển động cơ cho ăn & LoadCell
 //  Chịu trách nhiệm: Dũng
 //  Chi tiết: FreeRTOS xTask, Timeout 30s, LoadCell HX711
 // ============================================================
@@ -21,7 +21,7 @@
 void FeedingTask_init(UBaseType_t priority = 3, uint16_t stackSize = 4096);
 
 /**
- * @brief Bắt đầu nhả cám theo gram
+ * @brief Bắt đầu cho ăn theo gram
  * @param target_gram: Số gram cần tính toán (ví dụ: 50.0)
  * 
  * Ghi lệnh vào xQueue_Commands → FeedingTask nhận lệnh
@@ -30,7 +30,7 @@ void FeedingTask_init(UBaseType_t priority = 3, uint16_t stackSize = 4096);
 void FeedingTask_StartFeed(float target_gram);
 
 /**
- * @brief Dừng quá trình nhả cám ngay lập tức
+ * @brief Dừng quá trình cho ăn ngay lập tức
  */
 void FeedingTask_StopFeed();
 
@@ -41,7 +41,7 @@ void FeedingTask_StopFeed();
 bool FeedingTask_IsMotorRunning();
 
 /**
- * @brief Lấy trọng lượng cám đã nhả (gram)
+ * @brief Lấy trọng lượng cám đã cho ăn (gram)
  * @return float: gram đã tính toán từ LoadCell
  */
 float FeedingTask_GetDispensedGram();

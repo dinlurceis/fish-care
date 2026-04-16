@@ -4,7 +4,7 @@
 #include <time.h>
 
 // ============================================================
-//  FEEDINGTASK - Điều khiển Motor B (nhả cám) + LoadCell
+//  FEEDINGTASK - Điều khiển Motor B (cho ăn) + LoadCell
 //  Chịu trách nhiệm: Dũng
 //  Chi tiết: 3 chế độ (Auto, Gram, Manual), Timeout 30s bảo vệ motor
 // ============================================================
@@ -14,7 +14,7 @@ namespace {
 TaskHandle_t s_TaskHandle = nullptr;
 
 // ─────────────────────────────────────────────────────────
-//  TRẠNG THÁI FEEDING - Theo dõi quá trình nhả cám
+//  TRẠNG THÁI FEEDING - Theo dõi quá trình cho ăn
 // ─────────────────────────────────────────────────────────
 
 // Chế độ feeding hiện tại
@@ -37,20 +37,20 @@ unsigned long s_AutoStartTime = 0;
 //  LOADCELL HX711 - Cân nặng cám
 // ─────────────────────────────────────────────────────────
 HX711 s_LoadCell;
-const float LOADCELL_SCALE_FACTOR = 505.4633;  // Từ PROJECT_CONTEXT.md
+const float LOADCELL_SCALE_FACTOR = 505.4633;
 
 float readWeightFromLoadCell() {
     if (!s_LoadCell.is_ready()) {
         return 0.0f;  // Fallback nếu sensor không sẵn sàng
     }
     
-    // Đọc cân nặng (blocking ~50ms)
-    float weight = s_LoadCell.get_units(10);  // 10 samples để trung bình
+    // Đọc cân nặng nhanh (chỉ 1 sample, không chờ average)
+    float weight = s_LoadCell.get_units(1);  // ← 1 sample thay vì 10 = nhanh 10x!
     return weight;
 }
 
 // ─────────────────────────────────────────────────────────
-//  ĐIỀU KHIỂN MOTOR B (Nhả thức ăn)
+//  ĐIỀU KHIỂN MOTOR B (Cho ăn)
 // ─────────────────────────────────────────────────────────
 
 void startMotor() {
@@ -60,7 +60,7 @@ void startMotor() {
     digitalWrite(PIN_FEED_IN2, LOW);
     s_MotorRunning = true;
     s_MotorStartTime = millis();
-    Serial.println("[FeedingTask] ✓ Motor nhả cám BẬT");
+    Serial.println("[FeedingTask] ✓ Motor cho ăn BẬT");
 }
 
 void stopMotor() {
@@ -69,7 +69,8 @@ void stopMotor() {
     digitalWrite(PIN_FEED_IN1, LOW);
     digitalWrite(PIN_FEED_IN2, LOW);
     s_MotorRunning = false;
-    Serial.println("[FeedingTask] ✓ Motor nhả cám TẮT");
+    s_MotorStartTime = 0;  // ← Reset startTime để track chính xác lần tắt tiếp theo
+    Serial.println("[FeedingTask] ✓ Motor cho ăn TẮT");
 }
 
 // ─────────────────────────────────────────────────────────
@@ -91,11 +92,11 @@ String formatTime() {
 }
 
 // ─────────────────────────────────────────────────────────
-//  LOG LỊCH SỬ NHẢI CÁM - Ghi vào Firebase qua NetworkTask
+//  LOG LỊCH SỬ CHO ĂN - Ghi vào Firebase qua NetworkTask
 // ─────────────────────────────────────────────────────────
 
 void logFeedLog(float grams, const String& mode) {
-    // ✓ Ghi lịch sử nhải cám vào Firebase /logs/ qua NetworkTask
+    // ✓ Ghi lịch sử cho ăn vào Firebase /logs/ qua NetworkTask
     // Đơn giản: format thời gian và gọi NetworkTask helper
     
     String timestamp = formatTime();
@@ -147,10 +148,17 @@ void feedingTaskLoop(void* unused) {
                     break;
                     
                 case CMD_THUCAN_GRAM:
-                    // Nhả cám theo gram
+                    // Cho ăn theo gram (chỉ khi target_gram > 0)
                     s_GramTarget = cmd.value;
-                    s_CurrentMode = FEED_GRAM;
-                    Serial.printf("[FeedingTask] CMD_THUCAN_GRAM - Nhả %.1f gram\n", s_GramTarget);
+                    if (cmd.value > 0) {
+                        s_CurrentMode = FEED_GRAM;
+                        Serial.printf("[FeedingTask] CMD_THUCAN_GRAM - Cho ăn %.1f gram\n", s_GramTarget);
+                    } else {
+                        // Bỏ qua nếu target_gram = 0
+                        s_CurrentMode = FEED_IDLE;
+                        stopMotor();
+                        Serial.printf("[FeedingTask] CMD_THUCAN_GRAM - Bỏ qua (target=%.1f)\n", s_GramTarget);
+                    }
                     break;
                     
                 case CMD_THUCAN_MANUAL:
@@ -165,7 +173,14 @@ void feedingTaskLoop(void* unused) {
                         stopMotor();
                         float dispensed = s_GramStartWeight - readWeightFromLoadCell();
                         if (dispensed < 0) dispensed = 0;
-                        logFeedLog(dispensed, "manual");
+                        
+                        // Chỉ ghi log nếu thực sự đã cho ăn
+                        // Điều kiện: dispensed > 0 AND s_MotorStartTime > 0 (motor đã chạy)
+                        // motorRan > 50ms để tránh false positive từ noise LoadCell
+                        bool motorRan = s_MotorStartTime > 0 && (millis() - s_MotorStartTime) > 50;
+                        if (dispensed > 0 && motorRan) {
+                            logFeedLog(dispensed, "manual");
+                        }
                         s_CurrentMode = FEED_IDLE;
                         Serial.printf("[FeedingTask] CMD_THUCAN_MANUAL OFF - Tắt motor, gram=%.1f\n", dispensed);
                     }
@@ -180,7 +195,7 @@ void feedingTaskLoop(void* unused) {
         float currentWeight = readWeightFromLoadCell();
         
         // ════════════════════════════════════════
-        //  MODE AUTO: Nhả cám lúc 6h00 & 17h00
+        //  MODE AUTO: Cho ăn lúc 6h00 & 17h00
         // ════════════════════════════════════════
         if (s_CurrentMode == FEED_AUTO) {
             if (!s_MotorRunning) {
@@ -191,51 +206,98 @@ void feedingTaskLoop(void* unused) {
                 if ((t->tm_hour == 6 && t->tm_min == 0) || 
                     (t->tm_hour == 17 && t->tm_min == 0)) {
                     
-                    // Bắt đầu nhả cám
+                    // Bắt đầu cho ăn
                     s_AutoStartWeight = currentWeight;
                     s_AutoStartTime = millis();
                     startMotor();
-                    Serial.printf("[FeedingTask] AUTO: Bắt đầu nhả cám lúc %02d:%02d\n", 
+                    Serial.printf("[FeedingTask] AUTO: Bắt đầu cho ăn lúc %02d:%02d\n", 
                                   t->tm_hour, t->tm_min);
                 }
             } else {
-                // Motor đang chạy - kiểm tra timeout 20 giây
-                if (millis() - s_MotorStartTime > 20000) {
+                // Motor đang chạy - kiểm tra timeout 20 giây hoặc user cancel
+                bool timeout = millis() - s_MotorStartTime > 20000;
+                
+                // Kiểm nếu user cancel (Firebase state = false)
+                CommandData_t checkCmd;
+                bool userCancel = false;
+                if (xQueuePeek(xQueue_Commands, &checkCmd, 0) == pdPASS) {
+                    if (checkCmd.type == CMD_THUCAN_AUTO && checkCmd.value < 0.5f) {
+                        userCancel = true;
+                    }
+                }
+                
+                if (timeout || userCancel) {
                     stopMotor();
                     float dispensed = s_AutoStartWeight - currentWeight;
                     if (dispensed < 0) dispensed = 0;
-                    logFeedLog(dispensed, "auto");
+                    
+                    // Chỉ ghi log nếu thực sự đã cho ăn (dispensed > 0)
+                    if (dispensed > 0) {
+                        logFeedLog(dispensed, "auto");
+                    }
                     s_CurrentMode = FEED_IDLE;
-                    Serial.printf("[FeedingTask] AUTO: Nhả xong, gram=%.1f\n", dispensed);
+                    
+                    if (userCancel) {
+                        Serial.printf("[FeedingTask] AUTO: Cho ăn dừng (user cancel), gram=%.1f\n", dispensed);
+                    } else {
+                        Serial.printf("[FeedingTask] AUTO: Cho ăn xong (timeout), gram=%.1f\n", dispensed);
+                    }
                 }
             }
         }
         
         // ════════════════════════════════════════
-        //  MODE GRAM: Nhả cám cho đến đủ số gram
+        //  MODE GRAM: Cho ăn cho đến đủ số gram
         // ════════════════════════════════════════
         else if (s_CurrentMode == FEED_GRAM) {
             if (!s_MotorRunning && s_GramTarget > 0) {
-                // Bắt đầu nhả cám
+                // Bắt đầu cho ăn
                 s_GramStartWeight = currentWeight;
                 startMotor();
-                Serial.printf("[FeedingTask] GRAM: Nhả %d gram\n", (int)s_GramTarget);
+                Serial.printf("[FeedingTask] GRAM: Cho ăn %.1f gram\n", s_GramTarget);
             }
             
             if (s_MotorRunning) {
                 float diff = s_GramStartWeight - currentWeight;  // Số gram đã rơi
                 
+                // Kiểm nếu user cancel (Firebase thay đổi target hoặc state)
+                CommandData_t checkCmd;
+                bool userCancel = false;
+                if (xQueuePeek(xQueue_Commands, &checkCmd, 0) == pdPASS) {
+                    if (checkCmd.type == CMD_THUCAN_GRAM) {
+                        if (checkCmd.value <= 0) {
+                            userCancel = true;  // User set target <= 0
+                        }
+                    }
+                }
+                
                 // Kiểm điều kiện dừng:
                 // 1. Đã rơi đủ gram
                 // 2. Timeout 30 giây (bảo vệ motor)
-                if (diff >= s_GramTarget || millis() - s_MotorStartTime > 30000) {
+                // 3. User cancel (set target <= 0)
+                if (diff >= s_GramTarget || 
+                    millis() - s_MotorStartTime > 30000 || 
+                    userCancel) {
+                    
                     stopMotor();
                     float dispensed = s_GramStartWeight - currentWeight;
                     if (dispensed < 0) dispensed = 0;
-                    logFeedLog(dispensed, "gram");
+                    
+                    // Chỉ ghi log nếu thực sự đã cho ăn (dispensed > 0)
+                    if (dispensed > 0) {
+                        logFeedLog(dispensed, "gram");
+                    }
                     s_CurrentMode = FEED_IDLE;
                     s_GramTarget = 0;
-                    Serial.printf("[FeedingTask] GRAM: Nhả xong, gram=%.1f\n", dispensed);
+                    
+                    // Debug: báo loại tắt motor
+                    if (userCancel) {
+                        Serial.printf("[FeedingTask] GRAM: Cho ăn dừng (user cancel), gram=%.1f\n", dispensed);
+                    } else if (millis() - s_MotorStartTime > 30000) {
+                        Serial.printf("[FeedingTask] GRAM: Cho ăn dừng (timeout), gram=%.1f\n", dispensed);
+                    } else {
+                        Serial.printf("[FeedingTask] GRAM: Cho ăn xong (đủ gram), gram=%.1f\n", dispensed);
+                    }
                 }
             }
         }
@@ -262,12 +324,17 @@ void feedingTaskLoop(void* unused) {
             }
         }
         
-        // ───── Debug Serial ─────
-        Serial.printf("[FeedingTask] Weight=%.1fg | Mode=%d | Motor=%s\n",
-                      currentWeight, s_CurrentMode, s_MotorRunning ? "ON" : "OFF");
+        // ───── Cập nhật Weight Vào Queue (để NetworkTask sync lên Firebase) ─────
+        // Nếu weight âm → set thành 0 (tránh âm lên Firebase)
+        SensorData_t sensorData = {0};
+        if (xQueuePeek(xQueue_SensorData, &sensorData, 0) == pdPASS) {
+            float weightToSync = (currentWeight >= 0) ? currentWeight : 0.0f;
+            sensorData.weight = weightToSync;
+            xQueueOverwrite(xQueue_SensorData, &sensorData);
+        }
         
         // ───── Delay ─────
-        vTaskDelay(pdMS_TO_TICKS(100));  // Check mỗi 100ms (chính xác hơn)
+        vTaskDelay(pdMS_TO_TICKS(20));  // Check mỗi 20ms (nhanh hơn 100ms)
     }
 }
 

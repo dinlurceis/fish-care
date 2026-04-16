@@ -3,6 +3,7 @@
 #include <FirebaseESP32.h>
 #include <esp_task_wdt.h>
 #include <time.h>
+#include "secrets.h"  // ← Load credentials từ file ẩn
 
 // ============================================================
 //  NETWORKTASK - Kết nối WiFi, Firebase, Retry logic
@@ -24,17 +25,8 @@ TaskHandle_t s_TaskHandle = nullptr;
 
 namespace {
 
-// WiFi credentials từ code cũ
-const char* WIFI_SSID_1 = "Hằng";
-const char* WIFI_PASS_1 = "12345678";
-const char* WIFI_SSID_2 = "Hang";
-const char* WIFI_PASS_2 = "12345678";
-
-// Firebase credentials từ code cũ
-const char* FIREBASE_HOST = "htn-firebase-12345-default-rtdb.asia-southeast1.firebasedatabase.app";
-const char* FIREBASE_API_KEY = "AIzaSyA-EXAMPLE-KEY-1234567890";
-const char* USER_EMAIL = "abcde@gmail.com";
-const char* USER_PASSWORD = "12345678";
+// WiFi & Firebase credentials được load từ include/secrets.h
+// (File này được .gitignore để bảo vệ - không push lên GitHub)
 
 // ─────────────────────────────────────────────────────────
 //  TRẠNG THÁI KẾT NỐI
@@ -122,13 +114,11 @@ void syncSensorDataToFirebase(const SensorData_t& data) {
     Firebase.setFloat(fbData, "/aquarium/temperature", data.temperature);
     Firebase.setFloat(fbData, "/aquarium/water_quality", data.tds);
     Firebase.setInt(fbData, "/aquarium/ts300b", data.turbidity);
-    if (data.weight > 0) {
-        Firebase.setFloat(fbData, "/aquarium/weight", data.weight);
-    }
+    Firebase.setFloat(fbData, "/aquarium/weight", data.weight);  // ← Luôn ghi weight
     
     // Debug
-    Serial.printf("[NetworkTask] Firebase sync: Temp=%.1f, TDS=%.1f, Turbidity=%d\n",
-                  data.temperature, data.tds, data.turbidity);
+    Serial.printf("[NetworkTask] Firebase sync: Temp=%.1f, TDS=%.1f, Turbidity=%d, Weight=%.1f\n",
+                  data.temperature, data.tds, data.turbidity, data.weight);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -344,12 +334,12 @@ void NetworkTask_LogFeedHistory(float grams, const String& mode, const String& t
     }
     
     // Tạo path cho log mới: /logs/log{counter}
-    String logPath = "/logs/log" + String(logCounter);
+    String basePath = "/logs/log" + String(logCounter);
     
     // Ghi thông tin cho ăn
-    if (Firebase.setFloat(fbData, logPath.concat("/gram"), grams) &&
-        Firebase.setString(fbData, logPath.concat("/mode"), mode) &&
-        Firebase.setString(fbData, logPath.concat("/time"), timeStr)) {
+    if (Firebase.setFloat(fbData, basePath + "/gram", grams) &&
+        Firebase.setString(fbData, basePath + "/mode", mode) &&
+        Firebase.setString(fbData, basePath + "/time", timeStr)) {
         
         // Tăng counter cho log tiếp theo
         Firebase.setInt(fbData, "/logs/counter", logCounter + 1);
