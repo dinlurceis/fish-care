@@ -19,17 +19,14 @@ constexpr int PIN_OXY_EN = 5;
 constexpr int PIN_OXY_IN1 = 26;
 constexpr int PIN_OXY_IN2 = 27;
 
-// WiFi/Firebase credentials.
-constexpr char WIFI_SSID[] = "YOUR_WIFI_SSID";
-constexpr char WIFI_PASSWORD[] = "YOUR_WIFI_PASSWORD";
-constexpr char FIREBASE_API_KEY[] = "YOUR_FIREBASE_API_KEY";
-constexpr char FIREBASE_DB_URL[] = "https://your-project-id-default-rtdb.firebaseio.com";
+// WiFi/Firebase credentials được load từ include/secrets.h
+// (Không define ở đây để tránh conflict)
 
 // Queue sizing and task timing.
 constexpr uint8_t SENSOR_QUEUE_LENGTH = 12;
 constexpr uint8_t COMMAND_QUEUE_LENGTH = 12;
 constexpr uint16_t SENSOR_SAMPLE_INTERVAL_MS = 2000;
-constexpr uint16_t AUTOMATION_CHECK_INTERVAL_MS = 10000;
+constexpr uint16_t AUTOMATION_CHECK_INTERVAL_MS = 50;    // ← Giảm từ 100 → 50ms (tắt nhanh hơn)
 
 // Retry and watchdog behavior.
 constexpr uint32_t WIFI_RETRY_BASE_MS = 2000;

@@ -14,3 +14,9 @@
 
 # Logs
 *.log
+
+# Credentials & Secrets (NEVER PUSH TO GITHUB)
+include/secrets.h
+secrets.h
+.env
+.env.local

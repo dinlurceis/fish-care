@@ -50,9 +50,9 @@ uint16_t NetworkTask_GetOfflineCacheSize();
 void NetworkTask_SyncOfflineCache();
 
 /**
- * @brief Ghi log lịch sử nhả cám vào Firebase
- * @param grams: Số gram đã nhả
- * @param mode: Chế độ nhả ("auto", "gram", "manual")
+ * @brief Ghi log lịch sử cho ăn vào Firebase
+ * @param grams: Số gram đã cho ăn
+ * @param mode: Chế độ cho ăn ("auto", "gram", "manual")
  * @param timeStr: Chuỗi thời gian (format HH:MM DD/MM/YYYY)
  * 
  * Gọi từ FeedingTask.cpp, thread-safe bằng mutex
