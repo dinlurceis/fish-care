@@ -15,6 +15,8 @@ import kotlin.coroutines.resumeWithException
 class FanControlRepository {
     private val fanRef = FirebaseDatabase.getInstance().getReference("aquarium/control/quat")
     private val autoActiveRef = FirebaseDatabase.getInstance().getReference("aquarium/control/quat_auto_active")
+    private val tempThresholdRef = FirebaseDatabase.getInstance().getReference("aquarium/settings/temp_threshold")
+    private val waterThresholdRef = FirebaseDatabase.getInstance().getReference("aquarium/settings/water_threshold")
 
     fun observeFanState(): Flow<Boolean> = callbackFlow {
         val listener = object : ValueEventListener {
@@ -48,6 +50,14 @@ class FanControlRepository {
 
     suspend fun setFanState(enabled: Boolean) {
         fanRef.awaitUpdate(enabled)
+    }
+
+    suspend fun updateTempThreshold(value: Float) {
+        tempThresholdRef.awaitUpdate(value)
+    }
+
+    suspend fun updateWaterThreshold(value: Int) {
+        waterThresholdRef.awaitUpdate(value)
     }
 
     private suspend fun DatabaseReference.awaitUpdate(value: Any) {

@@ -20,7 +20,11 @@ data class FanControlUiState(
     val isListening: Boolean = false,
     val voiceText: String = "",
     val message: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val currentTemp: Float = 28.5f,
+    val tempThreshold: Float = 30.0f,
+    val currentWaterQuality: Int = 85,
+    val waterQualityThreshold: Int = 70
 )
 
 class FanControlViewModel(
@@ -99,6 +103,28 @@ class FanControlViewModel(
                         error = "Lỗi khi điều khiển quạt"
                     )
                 }
+        }
+    }
+
+    fun updateTempThreshold(newThreshold: Float) {
+        val updatedThreshold = String.format("%.1f", newThreshold).toFloat()
+        _uiState.value = _uiState.value.copy(tempThreshold = updatedThreshold)
+        
+        // AUTO-SAVE: Gọi repository để cập nhật lên Firebase/ESP32 ngay lập tức
+        viewModelScope.launch {
+            runCatching { repository.updateTempThreshold(updatedThreshold) }
+                .onFailure { _uiState.value = _uiState.value.copy(error = "Không thể lưu ngưỡng nhiệt độ") }
+        }
+    }
+
+    fun updateWaterQualityThreshold(newThreshold: Int) {
+        val clampedThreshold = newThreshold.coerceIn(0, 100)
+        _uiState.value = _uiState.value.copy(waterQualityThreshold = clampedThreshold)
+        
+        // AUTO-SAVE: Gọi repository ngay lập tức
+        viewModelScope.launch {
+            runCatching { repository.updateWaterThreshold(clampedThreshold) }
+                .onFailure { _uiState.value = _uiState.value.copy(error = "Không thể lưu ngưỡng chất lượng nước") }
         }
     }
 
