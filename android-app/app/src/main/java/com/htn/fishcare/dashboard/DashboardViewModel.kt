@@ -16,11 +16,20 @@ class DashboardViewModel : ViewModel() {
     // StateFlow chỉ đọc dành cho UI (Compose) lắng nghe
     val sensorState: StateFlow<SensorData> = _sensorState.asStateFlow()
 
-    // Khởi tạo Firebase Database instance
-    private val database = FirebaseDatabase.getInstance()
+    // Lazy initialization của Firebase Database
+    private val database: FirebaseDatabase by lazy {
+        try {
+            FirebaseDatabase.getInstance()
+        } catch (e: Exception) {
+            // Firebase not initialized, will retry on next access
+            throw RuntimeException("Firebase not initialized", e)
+        }
+    }
     
     // Lấy reference theo đúng Schema trong PROJECT_CONTEXT.md
-    private val sensorRef = database.getReference("aquarium")
+    private val sensorRef by lazy {
+        database.getReference("aquarium")
+    }
 
     init {
         listenToSensorData()

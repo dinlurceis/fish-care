@@ -8,13 +8,12 @@ lifecycleRuntimeKtx = "2.6.1"
 lifecycleViewmodelCompose = "2.9.4"
 lifecycleViewmodel = "2.6.1"
 activityCompose = "1.8.0"
-kotlin = "2.2.10"
+kotlin = "2.1.10"
 composeBom = "2026.02.01"
 material = "1.12.0"
-hilt = "2.48"
+hilt = "2.51"
 mpAndroidChart = "3.1.0"
 fragment = "1.6.2"
-generativeAi = "0.5.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -40,10 +39,10 @@ mp-android-chart = { group = "com.github.PhilJay", name = "MPAndroidChart", vers
 androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragment" }
 androidx-lifecycle-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodel" }
 androidx-databinding-runtime = { group = "androidx.databinding", name = "databinding-runtime", version = "8.3.0" }
-google-generative-ai = { group = "com.google.ai.client.generativeai", name = "google-generative-ai-kotlin", version.ref = "generativeAi" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 

@@ -48,6 +48,12 @@ class GroqAiRepo {
 
     suspend fun analyzeWaterChart(dataList: List<SensorData>): String = withContext(Dispatchers.IO) {
         try {
+            // Check if API key is configured
+            val apiKey = BuildConfig.GROQ_API_KEY
+            if (apiKey.isEmpty() || apiKey == "your_groq_api_key_here") {
+                return@withContext "Vui lòng cấu hình GROQ_API_KEY trong local.properties"
+            }
+
             // 1. Format dataList thành chuỗi text dạng bảng
             val formattedData = formatWaterDataAsTable(dataList)
 
@@ -55,7 +61,6 @@ class GroqAiRepo {
             val prompt = buildWaterAnalysisPrompt(formattedData, dataList.size)
 
             // 3. Gọi Groq API
-            val apiKey = BuildConfig.GROQ_API_KEY
             val result = callGroqApi(prompt, apiKey)
 
             Log.d(TAG, "Groq API response: $result")
