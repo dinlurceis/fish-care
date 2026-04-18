@@ -94,6 +94,9 @@ void automationTaskLoop(void* unused) {
             if (s_EdgeOverrideActive) {
                 s_EdgeOverrideActive = false;
                 Serial.println("[AutomationTask] WiFi khôi phục - tắt edge override");
+
+                // Đồng bộ trạng thái về Firebase sau khi online trở lại
+                Firebase.RTDB.setBool(&fbdo, "aquarium/control/quat_auto_active", false);
             }
         } else {
             // === CHẾ ĐỘ EDGE LOGIC (OFFLINE) ===
@@ -115,6 +118,9 @@ void automationTaskLoop(void* unused) {
                     
                     Serial.printf("[AutomationTask] ⚠️  EDGE LOGIC: WiFi mất + Temp=%.1f°C > ngưỡng → Bật oxy 5 phút\n",
                                   sensorData.temperature);
+
+                    // Ghi nhận trạng thái "Auto" để báo về App khi có mạng lại
+                    // (Lưu vào biến local, sẽ đẩy lên Firebase ở nhánh isWiFiConnected bên trên)
                 }
                 
                 // Kiểm timeout: Tắt oxy sau 5 phút
