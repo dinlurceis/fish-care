@@ -27,3 +27,5 @@ compile_commands.json
 codecu.md
 COMPARISON_CODE_OLD_NEW.md
 local.properties
+android-app/app/google-services.json
+android-app/local.properties
