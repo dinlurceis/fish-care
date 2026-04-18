@@ -125,6 +125,10 @@ fun FanControlScreen(
                 }
 
                 item {
+                    AutomationSettingsSection()
+                }
+
+                item {
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface
