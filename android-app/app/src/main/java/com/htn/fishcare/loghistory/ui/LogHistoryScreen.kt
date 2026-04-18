@@ -7,11 +7,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,18 +30,29 @@ import com.htn.fishcare.loghistory.model.FeedLogEntry
 import java.util.Locale
 
 @Composable
-fun LogHistoryRoute(viewModel: LogHistoryViewModel = viewModel()) {
+fun LogHistoryRoute(
+    modifier: Modifier = Modifier,
+    viewModel: LogHistoryViewModel = viewModel()
+) {
     val uiState by viewModel.uiState.collectAsState()
 
     LogHistoryScreen(
-        uiState = uiState
+        modifier = modifier,
+        uiState = uiState,
+        onSearchQueryChange = viewModel::onSearchQueryChange,
+        onDateFilterChange = viewModel::onDateFilterChange
     )
 }
 
 @Composable
-fun LogHistoryScreen(uiState: LogHistoryUiState) {
+fun LogHistoryScreen(
+    modifier: Modifier = Modifier,
+    uiState: LogHistoryUiState,
+    onSearchQueryChange: (String) -> Unit,
+    onDateFilterChange: (String?) -> Unit
+) {
     Scaffold(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         when {
             uiState.isLoading -> {
@@ -71,7 +86,7 @@ fun LogHistoryScreen(uiState: LogHistoryUiState) {
                 }
             }
 
-            uiState.logs.isEmpty() -> {
+            uiState.filteredLogs.isEmpty() -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -80,30 +95,78 @@ fun LogHistoryScreen(uiState: LogHistoryUiState) {
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Chua co du lieu log",
+                        text = if (uiState.logs.isEmpty()) {
+                            "Chua co du lieu log"
+                        } else {
+                            "Khong co ket qua phu hop"
+                        },
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
             }
 
             else -> {
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(innerPadding)
                 ) {
-                    item {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                         Text(
                             text = "Log History",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
+                        Text(
+                            text = "Tim kiem va loc lich su nhan/xa thuc an",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedTextField(
+                            value = uiState.searchQuery,
+                            onValueChange = onSearchQueryChange,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp),
+                            label = { Text("Tim theo mode, thoi gian, ma log") },
+                            singleLine = true
+                        )
+
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                AssistChip(
+                                    onClick = { onDateFilterChange(null) },
+                                    label = {
+                                        Text(
+                                            text = if (uiState.selectedDate == null) "Tat ca ngay *" else "Tat ca ngay"
+                                        )
+                                    }
+                                )
+                            }
+
+                            items(uiState.availableDates) { date ->
+                                val selected = uiState.selectedDate == date
+                                AssistChip(
+                                    onClick = { onDateFilterChange(date) },
+                                    label = { Text(if (selected) "$date *" else date) }
+                                )
+                            }
+                        }
                     }
 
-                    items(uiState.logs, key = { it.id }) { log ->
-                        LogHistoryItem(log = log)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(uiState.filteredLogs, key = { it.id }) { log ->
+                            LogHistoryItem(log = log)
+                        }
                     }
                 }
             }
@@ -114,7 +177,10 @@ fun LogHistoryScreen(uiState: LogHistoryUiState) {
 @Composable
 private fun LogHistoryItem(log: FeedLogEntry) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
     ) {
         Column(
             modifier = Modifier
@@ -128,12 +194,12 @@ private fun LogHistoryItem(log: FeedLogEntry) {
             ) {
                 Text(
                     text = log.id,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = "${String.format(Locale.US, "%.1f", log.gram)} g",
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
             }
