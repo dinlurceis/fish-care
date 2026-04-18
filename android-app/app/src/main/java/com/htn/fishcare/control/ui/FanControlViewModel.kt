@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 data class FanControlUiState(
     val isLoading: Boolean = true,
     val isFanOn: Boolean = false,
+    val isAutoActive: Boolean = false,
     val isUpdating: Boolean = false,
     val message: String? = null,
     val error: String? = null
@@ -26,6 +27,7 @@ class FanControlViewModel(
 
     init {
         observeFanState()
+        observeAutoActiveState()
     }
 
     fun toggleFan(enabled: Boolean) {
@@ -49,6 +51,15 @@ class FanControlViewModel(
 
     fun clearMessage() {
         _uiState.value = _uiState.value.copy(message = null, error = null)
+    }
+
+    private fun observeAutoActiveState() {
+        viewModelScope.launch {
+            repository.observeAutoActiveState()
+                .collect { isAutoActive ->
+                    _uiState.value = _uiState.value.copy(isAutoActive = isAutoActive)
+                }
+        }
     }
 
     private fun observeFanState() {

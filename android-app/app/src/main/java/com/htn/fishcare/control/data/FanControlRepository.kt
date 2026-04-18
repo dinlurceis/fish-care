@@ -14,6 +14,7 @@ import kotlin.coroutines.resumeWithException
 
 class FanControlRepository {
     private val fanRef = FirebaseDatabase.getInstance().getReference("aquarium/control/quat")
+    private val autoActiveRef = FirebaseDatabase.getInstance().getReference("aquarium/control/quat_auto_active")
 
     fun observeFanState(): Flow<Boolean> = callbackFlow {
         val listener = object : ValueEventListener {
@@ -26,9 +27,23 @@ class FanControlRepository {
                 close(error.toException())
             }
         }
-
         fanRef.addValueEventListener(listener)
         awaitClose { fanRef.removeEventListener(listener) }
+    }
+
+    fun observeAutoActiveState(): Flow<Boolean> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val state = snapshot.getValue(Boolean::class.java) ?: false
+                trySend(state)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        autoActiveRef.addValueEventListener(listener)
+        awaitClose { autoActiveRef.removeEventListener(listener) }
     }
 
     suspend fun setFanState(enabled: Boolean) {

@@ -98,6 +98,30 @@ fun FanControlScreen(
                     )
                 }
 
+                if (uiState.isAutoActive) {
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "⚠️ HỆ THỐNG TỰ KÍCH HOẠT: Quạt đang chạy do cảm biến vượt ngưỡng!",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
                 item {
                     ControlCard(
                         title = "Trạng thái Quạt",
