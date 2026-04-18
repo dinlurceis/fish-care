@@ -11,11 +11,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.htn.fishcare.control.ui.FanControlRoute
 import com.htn.fishcare.feeding.ui.FeedingControlRoute
 import com.htn.fishcare.loghistory.ui.LogHistoryRoute
 
 private enum class FishCareTab {
     FEEDING,
+    CONTROL,
     HISTORY
 }
 
@@ -33,6 +35,12 @@ fun FishCareApp() {
                     label = { Text("Feeding") }
                 )
                 NavigationBarItem(
+                    selected = selectedTab == FishCareTab.CONTROL,
+                    onClick = { selectedTab = FishCareTab.CONTROL },
+                    icon = { Text("C") },
+                    label = { Text("Control") }
+                )
+                NavigationBarItem(
                     selected = selectedTab == FishCareTab.HISTORY,
                     onClick = { selectedTab = FishCareTab.HISTORY },
                     icon = { Text("H") },
@@ -43,6 +51,7 @@ fun FishCareApp() {
     ) { innerPadding ->
         when (selectedTab) {
             FishCareTab.FEEDING -> FeedingControlRoute(modifier = Modifier.padding(innerPadding))
+            FishCareTab.CONTROL -> FanControlRoute(modifier = Modifier.padding(innerPadding))
             FishCareTab.HISTORY -> LogHistoryRoute(modifier = Modifier.padding(innerPadding))
         }
     }
