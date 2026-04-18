@@ -36,10 +36,9 @@ volatile bool isWiFiConnected = false;
 //  WATCHDOG & ERROR HANDLING
 // ============================================================
 void configureWatchdog() {
-    // Cấu hình watchdog 20 giây như PROJECT_CONTEXT
+    // Cấu hình watchdog 20 giây
     esp_task_wdt_init(NETWORK_WDT_TIMEOUT_SEC, true);
     // Subscribe NetworkTask vào watchdog
-    // (sẽ làm trong NetworkTask_init())
     Serial.println("[main] Watchdog configured: " + String(NETWORK_WDT_TIMEOUT_SEC) + "s timeout");
 }
 

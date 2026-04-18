@@ -122,7 +122,7 @@ void syncSensorDataToFirebase(const SensorData_t& data) {
 }
 
 // ─────────────────────────────────────────────────────────
-//  HÀM ĐỌCỆNH TỪ FIREBASE
+//  HÀM ĐỌC LỆNH TỪ FIREBASE
 // ─────────────────────────────────────────────────────────
 
 void pollCommandsFromFirebase() {

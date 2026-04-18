@@ -21,8 +21,8 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.google.android.material.tabs.TabLayout
-import com.team.iot.BuildConfig
-import com.team.iot.databinding.FragmentChartBinding
+import com.htn.fishcare.BuildConfig
+import com.htn.fishcare.databinding.FragmentChartBinding
 import com.team.iot.repository.SensorData
 import com.team.iot.viewmodel.ChartViewModel
 import dagger.hilt.android.AndroidEntryPoint

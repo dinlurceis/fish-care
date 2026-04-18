@@ -1,7 +1,20 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.android)
+    id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.kotlin.serialization)
+    id("com.google.gms.google-services")
+}
+
+// Load local.properties
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
 }
 
 android {
@@ -16,6 +29,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Read Groq API Key from local.properties
+        val groqApiKey = localProperties.getProperty("GROQ_API_KEY", "")
+        buildConfigField("String", "GROQ_API_KEY", "\"$groqApiKey\"")
     }
 
     buildTypes {
@@ -33,25 +50,45 @@ android {
     }
     buildFeatures {
         compose = true
+        dataBinding = true
+        buildConfig = true
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
+}
+
+// Disable KAPT build cache to resolve metadata issues
+kapt {
+    useBuildCache = false
 }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.fragment.ktx)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
-    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
+    implementation(libs.material.design)
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    implementation(libs.mp.android.chart)
+    implementation(libs.androidx.databinding.runtime)
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib")
+    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
     implementation("com.google.firebase:firebase-database")
+    implementation("com.google.firebase:firebase-analytics")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
