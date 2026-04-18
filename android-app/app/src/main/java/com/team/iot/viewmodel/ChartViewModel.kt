@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team.iot.repository.FirebaseRepo
-import com.team.iot.repository.GeminiAiRepo
+import com.team.iot.repository.GroqAiRepo
 import com.team.iot.repository.SensorData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +17,7 @@ import kotlin.random.Random
 @HiltViewModel
 class ChartViewModel @Inject constructor(
     private val firebaseRepo: FirebaseRepo,
-    private val geminiAiRepo: GeminiAiRepo
+    private val groqAiRepo: GroqAiRepo
 ) : ViewModel() {
 
     private val TAG = "ChartViewModel"
@@ -81,7 +81,7 @@ class ChartViewModel @Inject constructor(
                     return@launch
                 }
 
-                val result = geminiAiRepo.analyzeWaterChart(currentData)
+                val result = groqAiRepo.analyzeWaterChart(currentData)
                 _aiResultState.value = result
 
                 Log.d(TAG, "AI analysis completed")
