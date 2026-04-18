@@ -85,7 +85,7 @@ fun DashboardScreen(
                 Icon(
                     imageVector = Icons.Default.Notifications,
                     contentDescription = "Notifications",
-                    tint = Color(0xFF29D3D3),
+                    tint = Color(0xFF0F3B73), // Deep blue from original picture
                     modifier = Modifier.size(26.dp)
                 )
             }
@@ -224,7 +224,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .weight(1f)
                     .height(65.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4FC3F7)), // Softer blue
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF29D3D3)), // Uniform Cyan
                 shape = RoundedCornerShape(20.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
@@ -236,7 +236,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .weight(1f)
                     .height(65.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9575CD)), // Soft purple for AI
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF29D3D3)), // Uniform Cyan
                 shape = RoundedCornerShape(20.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
