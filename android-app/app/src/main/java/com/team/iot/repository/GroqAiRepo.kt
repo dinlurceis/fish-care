@@ -13,6 +13,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 
 /**
  * Data classes cho Groq API (OpenAI-compatible format)
@@ -41,7 +42,7 @@ data class GroqChoice(
     val message: GroqMessage?
 )
 
-class GroqAiRepo {
+class GroqAiRepo @Inject constructor() {
     private val TAG = "GroqAiRepo"
     private val httpClient = OkHttpClient()
     private val json = Json { ignoreUnknownKeys = true }

@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import javax.inject.Inject
 
 data class SensorData(
     val timestamp: Long = 0,
@@ -13,7 +14,7 @@ data class SensorData(
     val ph: Double = 0.0
 )
 
-class FirebaseRepo {
+class FirebaseRepo @Inject constructor() {
     private val database = FirebaseDatabase.getInstance()
     private val TAG = "FirebaseRepo"
 
