@@ -18,14 +18,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.MicNone
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MicNone
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -56,7 +53,8 @@ fun FanControlRoute(
     FanControlScreen(
         modifier = modifier,
         uiState = uiState,
-        onToggleFan = viewModel::toggleFan
+        onToggleFan = viewModel::toggleFan,
+        onStartVoiceCommand = viewModel::startVoiceCommand
     )
 }
 
@@ -64,7 +62,8 @@ fun FanControlRoute(
 fun FanControlScreen(
     modifier: Modifier = Modifier,
     uiState: FanControlUiState,
-    onToggleFan: (Boolean) -> Unit
+    onToggleFan: (Boolean) -> Unit,
+    onStartVoiceCommand: () -> Unit
 ) {
     val gradient = Brush.verticalGradient(
         colors = listOf(Color(0xFFF4FBF7), Color(0xFFE8F1FF))
@@ -206,7 +205,7 @@ fun FanControlScreen(
         }
 
         FloatingActionButton(
-            onClick = viewModel::startVoiceCommand,
+            onClick = onStartVoiceCommand,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 32.dp),
