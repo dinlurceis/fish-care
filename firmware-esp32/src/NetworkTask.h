@@ -49,12 +49,14 @@ uint16_t NetworkTask_GetOfflineCacheSize();
  */
 void NetworkTask_SyncOfflineCache();
 
+
+
 /**
- * @brief Ghi log lịch sử cho ăn vào Firebase
- * @param grams: Số gram đã cho ăn
- * @param mode: Chế độ cho ăn ("auto", "gram", "manual")
- * @param timeStr: Chuỗi thời gian (format HH:MM DD/MM/YYYY)
- * 
- * Gọi từ FeedingTask.cpp, thread-safe bằng mutex
+ * @brief Push cảnh báo ngưỡng lên /notifications Firebase
+ * @param type:    "water_quality" | "temperature" | "alert"
+ * @param title:   Tiêu đề notification
+ * @param message: Nội dung chi tiết
+ *
+ * Có debounce 10 phút để tránh spam cùng 1 loại alert.
  */
-void NetworkTask_LogFeedHistory(float grams, const String& mode, const String& timeStr);
+void pushAlertToFirebase(const char* type, const char* title, const char* message);

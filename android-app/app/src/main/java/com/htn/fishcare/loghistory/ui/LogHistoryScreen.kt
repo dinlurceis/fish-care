@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
 package com.htn.fishcare.loghistory.ui
 
 import androidx.compose.foundation.layout.Arrangement
@@ -10,19 +11,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,7 +41,8 @@ import java.util.Locale
 @Composable
 fun LogHistoryRoute(
     modifier: Modifier = Modifier,
-    viewModel: LogHistoryViewModel = viewModel()
+    viewModel: LogHistoryViewModel = viewModel(),
+    onBackClick: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -40,7 +50,8 @@ fun LogHistoryRoute(
         modifier = modifier,
         uiState = uiState,
         onSearchQueryChange = viewModel::onSearchQueryChange,
-        onDateFilterChange = viewModel::onDateFilterChange
+        onDateFilterChange = viewModel::onDateFilterChange,
+        onBackClick = onBackClick
     )
 }
 
@@ -49,10 +60,28 @@ fun LogHistoryScreen(
     modifier: Modifier = Modifier,
     uiState: LogHistoryUiState,
     onSearchQueryChange: (String) -> Unit,
-    onDateFilterChange: (String?) -> Unit
+    onDateFilterChange: (String?) -> Unit,
+    onBackClick: (() -> Unit)? = null
 ) {
     Scaffold(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = { Text("Lịch sử cho ăn", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    if (onBackClick != null) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Trở về")
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF0E5A2A),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
+            )
+        }
     ) { innerPadding ->
         when {
             uiState.isLoading -> {
@@ -65,7 +94,7 @@ fun LogHistoryScreen(
                 ) {
                     CircularProgressIndicator()
                     Text(
-                        text = "Dang tai lich su...",
+                        text = "Đang tải lịch sử...",
                         modifier = Modifier.padding(top = 12.dp)
                     )
                 }
@@ -80,7 +109,7 @@ fun LogHistoryScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Khong tai duoc du lieu log",
+                        text = "Không tải được dữ liệu lịch sử",
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
@@ -96,9 +125,9 @@ fun LogHistoryScreen(
                 ) {
                     Text(
                         text = if (uiState.logs.isEmpty()) {
-                            "Chua co du lieu log"
+                            "Chưa có dữ liệu lịch sử nào"
                         } else {
-                            "Khong co ket qua phu hop"
+                            "Không có kết quả phù hợp"
                         },
                         style = MaterialTheme.typography.titleMedium
                     )
@@ -113,12 +142,7 @@ fun LogHistoryScreen(
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                         Text(
-                            text = "Log History",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Tim kiem va loc lich su nhan/xa thuc an",
+                            text = "Tìm kiếm & Lọc lịch sử",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -128,7 +152,7 @@ fun LogHistoryScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 10.dp),
-                            label = { Text("Tim theo mode, thoi gian, ma log") },
+                            label = { Text("Tìm theo chế độ, thời gian...") },
                             singleLine = true
                         )
 
@@ -143,7 +167,7 @@ fun LogHistoryScreen(
                                     onClick = { onDateFilterChange(null) },
                                     label = {
                                         Text(
-                                            text = if (uiState.selectedDate == null) "Tat ca ngay *" else "Tat ca ngay"
+                                            text = if (uiState.selectedDate == null) "Tất cả ngày *" else "Tất cả ngày"
                                         )
                                     }
                                 )
@@ -193,23 +217,25 @@ private fun LogHistoryItem(log: FeedLogEntry) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = log.id,
+                    text = log.id.uppercase(),
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Gray
                 )
                 Text(
-                    text = "${String.format(Locale.US, "%.1f", log.gram)} g",
+                    text = "${String.format(Locale.US, "%.1f", log.gram)} gam",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0E5A2A)
                 )
             }
 
             Text(
-                text = "Mode: ${log.mode}",
+                text = "Chế độ: ${log.mode}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Time: ${log.time}",
+                text = "Thời gian: ${log.time}",
                 style = MaterialTheme.typography.bodyMedium
             )
         }

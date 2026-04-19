@@ -39,7 +39,6 @@ void SystemHealth_SubscribeTaskToWatchdog(TaskHandle_t task_handle) {
 
 void SystemHealth_ResetWatchdog() {
     // Gọi từ NetworkTask định kỳ để báo "tôi còn active"
-    esp_task_wdt_reset();
 }
 
 SystemHealth_t SystemHealth_GetStatus() {

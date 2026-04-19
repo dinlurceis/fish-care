@@ -45,3 +45,9 @@ bool FeedingTask_IsMotorRunning();
  * @return float: gram đã tính toán từ LoadCell
  */
 float FeedingTask_GetDispensedGram();
+
+/**
+ * @brief Lấy trạng thái khối lượng thực trên bề mặt cân (Gram)
+ * @return float: gram thực tế hiện tại
+ */
+float FeedingTask_GetCurrentWeight();

@@ -32,7 +32,7 @@ constexpr uint16_t AUTOMATION_CHECK_INTERVAL_MS = 50;    // ← Giảm từ 100 
 constexpr uint32_t WIFI_RETRY_BASE_MS = 2000;
 constexpr uint32_t WIFI_RETRY_MAX_MS = 30000;
 constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 10000;
-constexpr uint8_t NETWORK_WDT_TIMEOUT_SEC = 20;
+constexpr uint8_t NETWORK_WDT_TIMEOUT_SEC = 60;
 constexpr uint8_t OFFLINE_CACHE_CAPACITY = 32;
 
 // ============================================================
@@ -71,6 +71,7 @@ typedef struct {
 //  EXTERN DECLARATIONS - Công khởi tạo, các task khác dùng
 // ============================================================
 extern QueueHandle_t xQueue_SensorData;
-extern QueueHandle_t xQueue_Commands;
+extern QueueHandle_t xQueue_FeedCommands;
+extern QueueHandle_t xQueue_AutoCommands;
 extern SemaphoreHandle_t xMutex_Firebase;
 extern volatile bool isWiFiConnected;

@@ -24,7 +24,8 @@ QueueHandle_t xQueue_SensorData = nullptr;
 
 // Queue lệnh điều khiển từ Firebase
 // Hoàng (NetworkTask) WRITE → Dũng (FeedingTask) + Duy (AutomationTask) READ
-QueueHandle_t xQueue_Commands = nullptr;
+QueueHandle_t xQueue_FeedCommands = nullptr;
+QueueHandle_t xQueue_AutoCommands = nullptr;
 
 // Mutex bảo vệ khi write Firebase để tránh race condition
 SemaphoreHandle_t xMutex_Firebase = nullptr;
@@ -52,7 +53,6 @@ void setup() {
     Serial.println("\n========================================");
     Serial.println("  🐟 Fish-Care IoT System - Boot 🐟");
     Serial.println("  FreeRTOS Multi-Task Architecture");
-    Serial.println("  Leader: Công (Task Orchestration)");
     Serial.println("========================================\n");
 
     // ── 1. Cấu hình Watchdog ───────────────────────────────
@@ -69,13 +69,15 @@ void setup() {
     }
     Serial.println("  ✓ xQueue_SensorData created");
 
-    // Commands Queue: size=5 để buffer lệnh từ Firebase
-    xQueue_Commands = xQueueCreate(5, sizeof(CommandData_t));
-    if (!xQueue_Commands) {
-        Serial.println("[FATAL] Failed to create xQueue_Commands!");
+    // Commands Queues: Mỗi consumer một queue riêng để tránh tranh giành lệnh
+    xQueue_FeedCommands = xQueueCreate(5, sizeof(CommandData_t));
+    xQueue_AutoCommands = xQueueCreate(5, sizeof(CommandData_t));
+    
+    if (!xQueue_FeedCommands || !xQueue_AutoCommands) {
+        Serial.println("[FATAL] Failed to create Command Queues!");
         while (true) { delay(1000); }
     }
-    Serial.println("  ✓ xQueue_Commands created");
+    Serial.println("  ✓ Command Queues (Feed + Auto) created");
 
     // Firebase Mutex
     xMutex_Firebase = xSemaphoreCreateMutex();

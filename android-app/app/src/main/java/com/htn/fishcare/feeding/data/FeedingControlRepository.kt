@@ -76,6 +76,9 @@ class FeedingControlRepository {
     }
 
     suspend fun startGramMode(targetGram: Float) {
+        // Ghi log ngay lập tức từ App (không cần chờ ESP32)
+        writeFeedLog(targetGram, "gram")
+        
         controlRef.awaitUpdate(
             mapOf(
                 "mode" to "gram",
@@ -93,6 +96,48 @@ class FeedingControlRepository {
                 "target_gram" to 0f
             )
         )
+    }
+
+    // Ghi lịch sử cho ăn vào /logs/ trực tiếp từ Android
+    private suspend fun writeFeedLog(gram: Float, mode: String) {
+        val logsRef = FirebaseDatabase.getInstance().getReference("logs")
+        
+        // Đọc counter hiện tại
+        val counterRef = logsRef.child("counter")
+        suspendCancellableCoroutine<Unit> { continuation ->
+            counterRef.get().addOnSuccessListener { snapshot ->
+                val counter = snapshot.getValue(Int::class.java) ?: 1
+                val logRef = logsRef.child("log$counter")
+                
+                // Lấy thời gian hiện tại
+                val cal = java.util.Calendar.getInstance()
+                val timeStr = String.format(
+                    "%02d:%02d %02d/%02d/%04d",
+                    cal.get(java.util.Calendar.HOUR_OF_DAY),
+                    cal.get(java.util.Calendar.MINUTE),
+                    cal.get(java.util.Calendar.DAY_OF_MONTH),
+                    cal.get(java.util.Calendar.MONTH) + 1,
+                    cal.get(java.util.Calendar.YEAR)
+                )
+                
+                // Ghi log entry
+                logRef.updateChildren(
+                    mapOf(
+                        "gram" to gram,
+                        "mode" to mode,
+                        "time" to timeStr
+                    )
+                ).addOnSuccessListener {
+                    // Tăng counter
+                    counterRef.setValue(counter + 1)
+                    if (continuation.isActive) continuation.resume(Unit)
+                }.addOnFailureListener {
+                    if (continuation.isActive) continuation.resume(Unit) // Không throw, bỏ qua lỗi log
+                }
+            }.addOnFailureListener {
+                if (continuation.isActive) continuation.resume(Unit)
+            }
+        }
     }
 
     private fun String.toFeedMode(): FeedMode = when (this) {

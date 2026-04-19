@@ -1,4 +1,5 @@
 #include "TdsSensor.h"
+#include <algorithm>
 
 void TdsSensor::begin() {
     // ── Cấu hình chân ADC ──
@@ -9,10 +10,10 @@ void TdsSensor::begin() {
 }
 
 float TdsSensor::readTds() {
-    // ── Đọc 1 lần ADC thô ──
+    // ── Đọc trực tiếp ──
     int rawAdc = analogRead(TDS_PIN);
 
-    // ── Chuyển ADC → Điện áp ──
+    // ── Hiệu chuẩn: Chuyển ADC → Điện áp ──
     float voltage = rawAdc * TDS_VREF / TDS_ADC_RES;
 
     // ── Tính TDS ppm ──

@@ -77,7 +77,7 @@ class GroqAiRepo @Inject constructor() {
         val url = "https://api.groq.com/openai/v1/chat/completions"
         
         val request = GroqRequest(
-            model = "mixtral-8x7b-32768",  // hoặc "llama2-70b-4096"
+            model = "llama-3.1-8b-instant",  // model nhanh, miễn phí trên Groq
             messages = listOf(
                 GroqMessage(role = "user", content = prompt)
             ),
@@ -110,6 +110,26 @@ class GroqAiRepo @Inject constructor() {
         } else {
             Log.e(TAG, "Groq API error: ${response.code} - ${response.message}")
             "Lỗi khi gọi API phân tích."
+        }
+    }
+
+    /**
+     * Gọi Groq API cho chẩn đoán sức khỏe cá (fish health diagnosis)
+     */
+    suspend fun callGroqApiForFishHealth(prompt: String): String = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = BuildConfig.GROQ_API_KEY
+            if (apiKey.isEmpty() || apiKey == "your_groq_api_key_here") {
+                return@withContext "Vui lòng cấu hình GROQ_API_KEY trong local.properties"
+            }
+
+            val result = callGroqApi(prompt, apiKey)
+            Log.d(TAG, "Fish health diagnosis result: $result")
+            result
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error analyzing fish health: ${e.message}", e)
+            "Lỗi khi phân tích sức khỏe cá. Vui lòng thử lại."
         }
     }
 
