@@ -58,3 +58,13 @@ void NetworkTask_SyncOfflineCache();
  * Gọi từ FeedingTask.cpp, thread-safe bằng mutex
  */
 void NetworkTask_LogFeedHistory(float grams, const String& mode, const String& timeStr);
+
+/**
+ * @brief Push cảnh báo ngưỡng lên /notifications Firebase
+ * @param type:    "water_quality" | "temperature" | "alert"
+ * @param title:   Tiêu đề notification
+ * @param message: Nội dung chi tiết
+ *
+ * Có debounce 10 phút để tránh spam cùng 1 loại alert.
+ */
+void pushAlertToFirebase(const char* type, const char* title, const char* message);

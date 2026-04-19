@@ -1,4 +1,5 @@
 #include "TurbiditySensor.h"
+#include <algorithm>
 
 void TurbiditySensor::begin() {
     // ── Cấu hình chân ADC ──
@@ -10,8 +11,16 @@ void TurbiditySensor::begin() {
 }
 
 int TurbiditySensor::readTurbidity() {
-    // ── Đọc 1 lần ADC thô ──
-    int turbidityRaw = analogRead(TURBIDITY_PIN);
+    // ── Lọc trung vị (Median Filter) với 15 mẫu (phần 2.5.1) ──
+    int samples[15];
+    for(int i = 0; i < 15; i++) {
+        samples[i] = analogRead(TURBIDITY_PIN);
+        delay(2); // delay ngắn giữa các mẫu
+    }
+    
+    // Sắp xếp mảng để lấy giá trị giữa
+    std::sort(samples, samples + 15);
+    int turbidityRaw = samples[7]; // Lấy giá trị trung vị (index 7)
 
     // Bảo vệ: giới hạn trong range 0-4095
     turbidityRaw = constrain(turbidityRaw, 0, 4095);

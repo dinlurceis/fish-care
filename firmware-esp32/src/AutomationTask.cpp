@@ -1,9 +1,11 @@
 #include "AutomationTask.h"
+#include "NetworkTask.h"
+#include <FirebaseESP32.h>
 
 // ============================================================
 //  AUTOMATIONTASK - Điều khiển Motor A (Oxy) + Edge Logic
 //  Chịu trách nhiệm: Duy
-//  Chi tiết: Bật/tắt oxy từ Firebase, tự động bật khi rớt mạng & nước xấu
+//  Chi tiết: Bật/tắt oxy từ Firebase, tự động bật khi rớt mạng & nhiệt độ quá cao
 // ============================================================
 
 namespace {
@@ -94,9 +96,6 @@ void automationTaskLoop(void* unused) {
             if (s_EdgeOverrideActive) {
                 s_EdgeOverrideActive = false;
                 Serial.println("[AutomationTask] WiFi khôi phục - tắt edge override");
-
-                // Đồng bộ trạng thái về Firebase sau khi online trở lại
-                Firebase.RTDB.setBool(&fbdo, "aquarium/control/quat_auto_active", false);
             }
         } else {
             // === CHẾ ĐỘ EDGE LOGIC (OFFLINE) ===

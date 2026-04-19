@@ -154,9 +154,9 @@ fun ChartScreen(
             // ══════════════════════════════════════════════════════════════════
             Text(
                 text = "📈 Số liệu trung bình ($selectedDays ngày qua)",
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1565C0)
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF0E5A2A)
             )
 
             Row(
@@ -184,8 +184,9 @@ fun ChartScreen(
                     ) {
                         Text(
                             text = "📂 ${chartData.size} bản ghi",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            color = Color(0xFF0E5A2A)
                         )
                         Text(
                             text = "Từ ${chartData.firstOrNull()?.timestamp?.let { formatDate(it) } ?: "N/A"}" +
@@ -216,8 +217,8 @@ fun ChartScreen(
                         Text("⚠️ Chưa có dữ liệu lịch sử", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         Button(
                             onClick = onSeedFakeData,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800)),
-                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0E5A2A)),
+                            shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Tạo dữ liệu mẫu (Demo)", color = Color.White)
@@ -231,8 +232,8 @@ fun ChartScreen(
             // ══════════════════════════════════════════════════════════════════
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(
@@ -245,7 +246,7 @@ fun ChartScreen(
                             text = "AI Phân tích chất lượng nước",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
-                            color = Color(0xFF1565C0)
+                            color = Color(0xFF0E5A2A)
                         )
                     }
 
@@ -274,8 +275,8 @@ fun ChartScreen(
                     Button(
                         onClick = onAnalyzeClick,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
-                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0E5A2A)),
+                        shape = RoundedCornerShape(16.dp),
                         enabled = !isLoading
                     ) {
                         if (isLoading) {
@@ -309,21 +310,27 @@ fun StatCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = title, fontSize = 11.sp, color = Color.Gray)
+            Text(text = title, fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "$value $unit",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1565C0)
+                text = value,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF0E5A2A)
+            )
+            Text(
+                text = unit,
+                fontSize = 11.sp,
+                color = Color(0xFF0E5A2A).copy(alpha = 0.7f)
             )
         }
     }

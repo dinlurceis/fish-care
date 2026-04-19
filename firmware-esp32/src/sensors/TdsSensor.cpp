@@ -1,4 +1,5 @@
 #include "TdsSensor.h"
+#include <algorithm>
 
 void TdsSensor::begin() {
     // ── Cấu hình chân ADC ──
@@ -9,11 +10,19 @@ void TdsSensor::begin() {
 }
 
 float TdsSensor::readTds() {
-    // ── Đọc 1 lần ADC thô ──
-    int rawAdc = analogRead(TDS_PIN);
+    // ── Lọc trung vị (Median Filter) với 15 mẫu theo phần 2.5.1 ──
+    int samples[15];
+    for(int i = 0; i < 15; i++) {
+        samples[i] = analogRead(TDS_PIN);
+        delay(2); // delay cực nhỏ giữa các lần đọc
+    }
+    
+    // Sắp xếp mảng để lấy giá trị giữa
+    std::sort(samples, samples + 15);
+    int medianAdc = samples[7]; // Mẫu vị trí giữa (index 7)
 
-    // ── Chuyển ADC → Điện áp ──
-    float voltage = rawAdc * TDS_VREF / TDS_ADC_RES;
+    // ── Hiệu chuẩn: Chuyển ADC → Điện áp (phần 2.5.2 a) ──
+    float voltage = medianAdc * TDS_VREF / TDS_ADC_RES;
 
     // ── Tính TDS ppm ──
     float tds = _voltageToPpm(voltage);

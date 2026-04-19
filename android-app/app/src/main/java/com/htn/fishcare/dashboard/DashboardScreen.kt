@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -31,13 +32,17 @@ import kotlinx.coroutines.delay
 fun DashboardRoute(
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = viewModel(),
-    animViewModel: LottieAnimationViewModel = hiltViewModel()
+    animViewModel: LottieAnimationViewModel = hiltViewModel(),
+    onNotificationClick: () -> Unit = {},
+    unreadCount: Int = 0
 ) {
     val sensorState by viewModel.sensorState.collectAsState()
     DashboardScreen(
-        sensorState = sensorState,
-        animViewModel = animViewModel,
-        modifier = modifier
+        sensorState         = sensorState,
+        animViewModel       = animViewModel,
+        onNotificationClick = onNotificationClick,
+        unreadCount         = unreadCount,
+        modifier            = modifier
     )
 }
 
@@ -45,6 +50,8 @@ fun DashboardRoute(
 fun DashboardScreen(
     sensorState: SensorData,
     animViewModel: LottieAnimationViewModel,
+    onNotificationClick: () -> Unit = {},
+    unreadCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -87,15 +94,35 @@ fun DashboardScreen(
                 Text("Hệ thống giám sát hồ cá", fontSize = 14.sp, color = Color.Gray)
             }
             IconButton(
-                onClick = { },
+                onClick = onNotificationClick,
                 modifier = Modifier.size(48.dp).background(Color.White, CircleShape)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Notifications,
-                    contentDescription = "Thông báo",
-                    tint = Color(0xFF0E5A2A),
-                    modifier = Modifier.size(26.dp)
-                )
+                Box {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Thông báo",
+                        tint = Color(0xFF0E5A2A),
+                        modifier = Modifier.size(26.dp)
+                    )
+                    // Badge đỏ số chưa đọc
+                    if (unreadCount > 0) {
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .background(Color.Red, CircleShape)
+                                .align(Alignment.TopEnd)
+                                .offset(x = 4.dp, y = (-4).dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (unreadCount > 9) "9+" else "$unreadCount",
+                                color = Color.White,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
         }
 

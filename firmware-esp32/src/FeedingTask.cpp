@@ -44,8 +44,14 @@ float readWeightFromLoadCell() {
         return 0.0f;  // Fallback nếu sensor không sẵn sàng
     }
     
-    // Đọc cân nặng nhanh (chỉ 1 sample, không chờ average)
-    float weight = s_LoadCell.get_units(1);  // ← 1 sample thay vì 10 = nhanh 10x!
+    // Đọc cân nặng trung bình nhiều lần để giảm nhiễu theo mục 2.5.2 b
+    float weight = s_LoadCell.get_units(10);
+    
+    // Nếu khối lượng nhỏ hơn ngưỡng (< 2g), coi là 0 để tránh nhiễu
+    if (weight < 2.0f && weight > -2.0f) {
+        weight = 0.0f;
+    }
+    
     return weight;
 }
 

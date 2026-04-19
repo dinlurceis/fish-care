@@ -105,20 +105,106 @@ void initFirebase() {
 //  HÀM ĐỒ THỐNG KÊ DỮ LIỆU LÊN FIREBASE
 // ─────────────────────────────────────────────────────────
 
+// Forward declaration
+void checkAndPushAlerts(const SensorData_t& data);
+
 void syncSensorDataToFirebase(const SensorData_t& data) {
     if (!s_FirebaseReady || !Firebase.ready()) {
         return;
     }
     
-    // Đẩy dữ liệu cảm biến lên Firebase
+    // ── Đẩy dữ liệu cảm biến lên Firebase ──
     Firebase.setFloat(fbData, "/aquarium/temperature", data.temperature);
     Firebase.setFloat(fbData, "/aquarium/water_quality", data.tds);
-    Firebase.setInt(fbData, "/aquarium/ts300b", data.turbidity);
-    Firebase.setFloat(fbData, "/aquarium/weight", data.weight);  // ← Luôn ghi weight
+    Firebase.setInt(fbData,   "/aquarium/ts300b", data.turbidity);
+    Firebase.setFloat(fbData, "/aquarium/weight", data.weight);
     
-    // Debug
+    // ── Kiểm tra ngưỡng và push alert ──
+    checkAndPushAlerts(data);
+    
     Serial.printf("[NetworkTask] Firebase sync: Temp=%.1f, TDS=%.1f, Turbidity=%d, Weight=%.1f\n",
                   data.temperature, data.tds, data.turbidity, data.weight);
+}
+
+// ─────────────────────────────────────────────────────────
+//  PUSH ALERT: ESP32 tự ghi /notifications khi vượt ngưỡng
+//  Hoàn toàn miễn phí, không cần Cloud Functions!
+// ─────────────────────────────────────────────────────────
+
+// Debounce: các biến lưu millis() lần alert cuối
+static unsigned long s_lastAlertTds     = 0;
+static unsigned long s_lastAlertTempHi  = 0;
+static unsigned long s_lastAlertTempLo  = 0;
+static unsigned long s_lastAlertTurb    = 0;
+const  unsigned long ALERT_DEBOUNCE_MS  = 10UL * 60 * 1000; // 10 phút
+
+void pushAlertToFirebase(const char* type, const char* title, const char* message) {
+    // Lấy NTP timestamp (Unix ms)
+    time_t now = time(nullptr);
+    long long tsMs = (long long)now * 1000LL;
+    
+    // Tạo push key dạng "/notifications/esp_<millis>"
+    String path = "/notifications/esp_" + String(millis());
+    
+    // Ghi từng trường (FirebaseESP32 không có updateNode có nested JSON dễ, dùng setJSON)
+    FirebaseJson json;
+    json.set("type",      type);
+    json.set("title",     title);
+    json.set("message",   message);
+    json.set("timestamp", tsMs);
+    json.set("read",      false);
+    
+    if (Firebase.setJSON(fbData, path, json)) {
+        Serial.printf("[NetworkTask] ✓ Alert pushed: %s\n", title);
+    } else {
+        Serial.printf("[NetworkTask] ⚠ Alert push fail: %s\n", fbData.errorReason().c_str());
+    }
+}
+
+void checkAndPushAlerts(const SensorData_t& data) {
+    unsigned long now = millis();
+    
+    // TDS quá thấp (ngưỡng quan trọng nhất theo PROJECT_CONTEXT dòng 113)
+    if (data.tds < 10.0f && (now - s_lastAlertTds > ALERT_DEBOUNCE_MS)) {
+        s_lastAlertTds = now;
+        pushAlertToFirebase("water_quality",
+            u8"🚨 Chất lượng nước nguy hiểm!",
+            u8"TDS đang rất thấp - kiểm tra ngay!");
+    }
+    // TDS quá cao
+    else if (data.tds > 400.0f && (now - s_lastAlertTds > ALERT_DEBOUNCE_MS)) {
+        s_lastAlertTds = now;
+        char msg[80];
+        snprintf(msg, sizeof(msg), "TDS: %.0f ppm (an toan <= 400 ppm)", data.tds);
+        pushAlertToFirebase("water_quality",
+            u8"⚠ Chất lượng nước cao", msg);
+    }
+    
+    // Nhi\u1ec7t \u0111\u1ed9 qu\u00e1 cao
+    if (data.temperature > 33.0f && (now - s_lastAlertTempHi > ALERT_DEBOUNCE_MS)) {
+        s_lastAlertTempHi = now;
+        char msg[80];
+        snprintf(msg, sizeof(msg), u8"Nhiệt độ: %.1f°C (an toàn <= 33°C)", data.temperature);
+        pushAlertToFirebase("temperature",
+            u8"🌡 Nhiệt độ nước quá cao", msg);
+    }
+    // Nhi\u1ec7t \u0111\u1ed9 qu\u00e1 th\u1ea5p
+    if (data.temperature < 20.0f && (now - s_lastAlertTempLo > ALERT_DEBOUNCE_MS)) {
+        s_lastAlertTempLo = now;
+        char msg[80];
+        snprintf(msg, sizeof(msg), u8"Nhiệt độ: %.1f°C (an toàn >= 20°C)", data.temperature);
+        pushAlertToFirebase("temperature",
+            u8"❄ Nhiệt độ nước quá thấp", msg);
+    }
+    
+    // Độ đục cao
+    if (data.turbidity > 8.0f && (now - s_lastAlertTurb > ALERT_DEBOUNCE_MS)) {
+        s_lastAlertTurb = now;
+        char msg[80];
+        snprintf(msg, sizeof(msg), u8"Độ đục: %.1f NTU (an toàn <= 8)", data.turbidity);
+        pushAlertToFirebase("water_quality",
+            u8"🌫 Độ đục nước cao", msg);
+    }
 }
 
 // ─────────────────────────────────────────────────────────
