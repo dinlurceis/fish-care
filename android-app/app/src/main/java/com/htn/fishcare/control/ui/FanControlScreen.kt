@@ -167,29 +167,6 @@ fun FanControlScreen(
                     }
                 }
 
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        ThresholdBox(
-                            modifier = Modifier.weight(1f),
-                            title = "Nhiệt độ",
-                            currentValue = "${uiState.currentTemp}°C",
-                            thresholdValue = uiState.tempThreshold,
-                            unit = "°C",
-                            onThresholdChange = { onUpdateTempThreshold(it) }
-                        )
-                        ThresholdBox(
-                            modifier = Modifier.weight(1f),
-                            title = "Chất lượng nước",
-                            currentValue = "${uiState.currentWaterQuality}%",
-                            thresholdValue = uiState.waterQualityThreshold.toFloat(),
-                            unit = "%",
-                            onThresholdChange = { onUpdateWaterThreshold(it.toInt()) }
-                        )
-                    }
-                }
 
                 item {
                     Card(

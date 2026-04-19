@@ -11,10 +11,11 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import javax.inject.Inject
 
-class FanControlRepository {
-    private val fanRef = FirebaseDatabase.getInstance().getReference("aquarium/control/quat")
-    private val autoActiveRef = FirebaseDatabase.getInstance().getReference("aquarium/control/quat_auto_active")
+class FanControlRepository @Inject constructor() {
+    private val fanRef = FirebaseDatabase.getInstance().getReference("aquarium/control/guong")
+    private val autoActiveRef = FirebaseDatabase.getInstance().getReference("aquarium/control/guong_auto_active")
     private val tempThresholdRef = FirebaseDatabase.getInstance().getReference("aquarium/settings/temp_threshold")
     private val waterThresholdRef = FirebaseDatabase.getInstance().getReference("aquarium/settings/water_threshold")
 
@@ -26,7 +27,9 @@ class FanControlRepository {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
+                // Log lỗi thay vì throw exception gây crash app
+                android.util.Log.e("FanControlRepo", "Permission Denied: ${error.message}")
+                close()
             }
         }
         fanRef.addValueEventListener(listener)
@@ -41,7 +44,8 @@ class FanControlRepository {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
+                android.util.Log.e("FanControlRepo", "Permission Denied: ${error.message}")
+                close()
             }
         }
         autoActiveRef.addValueEventListener(listener)

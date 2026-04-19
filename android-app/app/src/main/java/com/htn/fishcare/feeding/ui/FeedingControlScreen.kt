@@ -91,12 +91,12 @@ fun FeedingControlScreen(
                 item {
                     Column(modifier = Modifier.padding(top = 18.dp, bottom = 4.dp)) {
                         Text(
-                            text = "Feeding Control",
+                            text = "Điều khiển Cho ăn",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Tuy chinh che do cho an: Auto, Manual, Dinh luong",
+                            text = "Tùy chỉnh chế độ cho ăn: Auto, Manual, Định lượng",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -113,7 +113,7 @@ fun FeedingControlScreen(
                 item {
                     ControlCard(
                         title = "Auto",
-                        subtitle = "He thong tu cho an theo lich 06:00 va 17:00",
+                        subtitle = "Hệ thống tự cho ăn theo lịch 06:00 và 17:00",
                         isActive = uiState.controlState.mode == FeedMode.AUTO,
                         action = {
                             Row(
@@ -121,7 +121,7 @@ fun FeedingControlScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Bat/Tat")
+                                Text("Bật/Tắt")
                                 Switch(
                                     checked = uiState.controlState.mode == FeedMode.AUTO && uiState.controlState.isEnabled,
                                     onCheckedChange = onSetAuto,
@@ -135,7 +135,7 @@ fun FeedingControlScreen(
                 item {
                     ControlCard(
                         title = "Manual",
-                        subtitle = "Dieu khien dong co cho an bang tay",
+                        subtitle = "Điều khiển động cơ cho ăn bằng tay",
                         isActive = uiState.controlState.mode == FeedMode.MANUAL,
                         action = {
                             Row(
@@ -147,14 +147,14 @@ fun FeedingControlScreen(
                                     enabled = !uiState.isSaving,
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("Bat")
+                                    Text("Bật")
                                 }
                                 TextButton(
                                     onClick = { onSetManual(false) },
                                     enabled = !uiState.isSaving,
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("Tat")
+                                    Text("Tắt")
                                 }
                             }
                         }
@@ -163,15 +163,15 @@ fun FeedingControlScreen(
 
                 item {
                     ControlCard(
-                        title = "Dinh luong",
-                        subtitle = "Nhap so gram va gui lenh cho an",
+                        title = "Định lượng",
+                        subtitle = "Nhập số gram và gửi lệnh cho ăn",
                         isActive = uiState.controlState.mode == FeedMode.GRAM,
                         action = {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedTextField(
                                     value = uiState.gramInput,
                                     onValueChange = onGramInputChange,
-                                    label = { Text("So gram") },
+                                    label = { Text("Số gram") },
                                     singleLine = true,
                                     enabled = !uiState.isSaving,
                                     modifier = Modifier.fillMaxWidth()
@@ -185,14 +185,14 @@ fun FeedingControlScreen(
                                         enabled = !uiState.isSaving,
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Cho an")
+                                        Text("Cho ăn")
                                     }
                                     TextButton(
                                         onClick = onStopGram,
                                         enabled = !uiState.isSaving,
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Dung")
+                                        Text("Dừng")
                                     }
                                 }
                             }
@@ -214,7 +214,7 @@ fun FeedingControlScreen(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = "Trang thai hien tai",
+                                text = "Trạng thái hiện tại",
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(text = "Mode: ${uiState.controlState.mode.name}")
@@ -238,7 +238,7 @@ fun FeedingControlScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Text("Dang gui lenh...")
+                    Text("Đang gửi lệnh...")
                 }
             }
         }

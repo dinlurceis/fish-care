@@ -41,10 +41,10 @@ class DashboardViewModel : ViewModel() {
             override fun onDataChange(snapshot: DataSnapshot) {
                 // Đọc đúng các key được quy định ("temperature", "water_quality", "ts300b")
                 // Dùng Double::class.java rồi cast toFloat() để tránh lỗi parse number của Firebase SDK
-                val temp = snapshot.child("temperature").getValue(Number::class.java)?.toFloat() ?: _sensorState.value.temperature
-                val tds = snapshot.child("water_quality").getValue(Number::class.java)?.toFloat() ?: _sensorState.value.tds
-                val turbidity = snapshot.child("ts300b").getValue(Number::class.java)?.toFloat() ?: _sensorState.value.turbidity
-                val feedWeight = snapshot.child("weight").getValue(Number::class.java)?.toFloat() ?: _sensorState.value.feedWeight
+                val temp = snapshot.child("temperature").getValue(Double::class.java)?.toFloat() ?: _sensorState.value.temperature
+                val tds = snapshot.child("water_quality").getValue(Double::class.java)?.toFloat() ?: _sensorState.value.tds
+                val turbidity = snapshot.child("ts300b").getValue(Double::class.java)?.toFloat() ?: _sensorState.value.turbidity
+                val feedWeight = snapshot.child("weight").getValue(Double::class.java)?.toFloat() ?: _sensorState.value.feedWeight
                 
                 // Cập nhật giá trị mới vào StateFlow, UI tự động vẽ lại
                 _sensorState.value = SensorData(

@@ -32,7 +32,8 @@ import java.util.Locale
 @Composable
 fun LogHistoryRoute(
     modifier: Modifier = Modifier,
-    viewModel: LogHistoryViewModel = viewModel()
+    viewModel: LogHistoryViewModel = viewModel(),
+    onBackClick: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -40,7 +41,8 @@ fun LogHistoryRoute(
         modifier = modifier,
         uiState = uiState,
         onSearchQueryChange = viewModel::onSearchQueryChange,
-        onDateFilterChange = viewModel::onDateFilterChange
+        onDateFilterChange = viewModel::onDateFilterChange,
+        onBackClick = onBackClick
     )
 }
 
@@ -49,7 +51,8 @@ fun LogHistoryScreen(
     modifier: Modifier = Modifier,
     uiState: LogHistoryUiState,
     onSearchQueryChange: (String) -> Unit,
-    onDateFilterChange: (String?) -> Unit
+    onDateFilterChange: (String?) -> Unit,
+    onBackClick: (() -> Unit)? = null
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize()
