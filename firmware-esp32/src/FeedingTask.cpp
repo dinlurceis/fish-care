@@ -44,13 +44,10 @@ float readWeightFromLoadCell() {
         return 0.0f;  // Fallback nếu sensor không sẵn sàng
     }
     
-    // Đọc cân nặng trung bình nhiều lần để giảm nhiễu theo mục 2.5.2 b
-    float weight = s_LoadCell.get_units(10);
+    // Đọc cân một lần trực tiếp, bỏ lọc trung vị
+    float weight = s_LoadCell.get_units(1);
     
-    // Nếu khối lượng nhỏ hơn ngưỡng (< 2g), coi là 0 để tránh nhiễu
-    if (weight < 2.0f && weight > -2.0f) {
-        weight = 0.0f;
-    }
+    // Đã bỏ bộ lọc ngắt ngưỡng < 2g để nhạy bén tối đa (có thể đo áp lực tay đè nhẹ)
     
     return weight;
 }
@@ -79,35 +76,7 @@ void stopMotor() {
     Serial.println("[FeedingTask] ✓ Motor cho ăn TẮT");
 }
 
-// ─────────────────────────────────────────────────────────
-//  TIỆN ÍCH THỜI GIAN - Format HH:MM DD/MM/YYYY
-// ─────────────────────────────────────────────────────────
 
-String formatTime() {
-    time_t now = time(nullptr);
-    struct tm* timeinfo = localtime(&now);
-    
-    // Nếu chưa sync được thời gian (< 1 ngày sau epoch)
-    if (now < 24 * 3600) {
-        return "00:00 01/01/1970";
-    }
-    
-    char buffer[20];
-    strftime(buffer, sizeof(buffer), "%H:%M %d/%m/%Y", timeinfo);
-    return String(buffer);
-}
-
-// ─────────────────────────────────────────────────────────
-//  LOG LỊCH SỬ CHO ĂN - Ghi vào Firebase qua NetworkTask
-// ─────────────────────────────────────────────────────────
-
-void logFeedLog(float grams, const String& mode) {
-    // ✓ Ghi lịch sử cho ăn vào Firebase /logs/ qua NetworkTask
-    // Đơn giản: format thời gian và gọi NetworkTask helper
-    
-    String timestamp = formatTime();
-    NetworkTask_LogFeedHistory(grams, mode, timestamp);
-}
 
 // ─────────────────────────────────────────────────────────
 //  TASK LOOP CHÍNH
@@ -138,7 +107,7 @@ void feedingTaskLoop(void* unused) {
         // ════════════════════════════════════════
         CommandData_t cmd;
         memset(&cmd, 0, sizeof(cmd));
-        if (xQueueReceive(xQueue_Commands, &cmd, 0) == pdPASS) {
+        if (xQueueReceive(xQueue_FeedCommands, &cmd, 0) == pdPASS) {
             switch (cmd.type) {
                 case CMD_THUCAN_AUTO:
                     if (cmd.value > 0.5f) {
@@ -154,13 +123,12 @@ void feedingTaskLoop(void* unused) {
                     break;
                     
                 case CMD_THUCAN_GRAM:
-                    // Cho ăn theo gram (chỉ khi target_gram > 0)
                     s_GramTarget = cmd.value;
                     if (cmd.value > 0) {
                         s_CurrentMode = FEED_GRAM;
+                        // Log lịch sử được Android App ghi trực tiếp lên Firebase
                         Serial.printf("[FeedingTask] CMD_THUCAN_GRAM - Cho ăn %.1f gram\n", s_GramTarget);
                     } else {
-                        // Bỏ qua nếu target_gram = 0
                         s_CurrentMode = FEED_IDLE;
                         stopMotor();
                         Serial.printf("[FeedingTask] CMD_THUCAN_GRAM - Bỏ qua (target=%.1f)\n", s_GramTarget);
@@ -184,9 +152,6 @@ void feedingTaskLoop(void* unused) {
                         // Điều kiện: dispensed > 0 AND s_MotorStartTime > 0 (motor đã chạy)
                         // motorRan > 50ms để tránh false positive từ noise LoadCell
                         bool motorRan = s_MotorStartTime > 0 && (millis() - s_MotorStartTime) > 50;
-                        if (dispensed > 0 && motorRan) {
-                            logFeedLog(dispensed, "manual");
-                        }
                         s_CurrentMode = FEED_IDLE;
                         Serial.printf("[FeedingTask] CMD_THUCAN_MANUAL OFF - Tắt motor, gram=%.1f\n", dispensed);
                     }
@@ -201,32 +166,31 @@ void feedingTaskLoop(void* unused) {
         float currentWeight = readWeightFromLoadCell();
         
         // ════════════════════════════════════════
-        //  MODE AUTO: Cho ăn lúc 6h00 & 17h00
+        //  MODE AUTO: Cho ăn lúc 6h00 & 17h00 (Chỉ kích hoạt 1 lần mỗi khung giờ)
         // ════════════════════════════════════════
         if (s_CurrentMode == FEED_AUTO) {
+            static int lastFeedHour = -1;
+            
             if (!s_MotorRunning) {
-                // Kiểm tra giờ hiện tại có phải 6h00 hoặc 17h00 không
                 time_t now = time(nullptr);
                 struct tm* t = localtime(&now);
                 
-                if ((t->tm_hour == 6 && t->tm_min == 0) || 
-                    (t->tm_hour == 17 && t->tm_min == 0)) {
+                if ((t->tm_hour == 6 && t->tm_min == 0 && lastFeedHour != 6) || 
+                    (t->tm_hour == 17 && t->tm_min == 0 && lastFeedHour != 17)) {
                     
-                    // Bắt đầu cho ăn
+                    lastFeedHour = t->tm_hour; // Đánh dấu đã cho ăn giờ này
                     s_AutoStartWeight = currentWeight;
                     s_AutoStartTime = millis();
                     startMotor();
-                    Serial.printf("[FeedingTask] AUTO: Bắt đầu cho ăn lúc %02d:%02d\n", 
-                                  t->tm_hour, t->tm_min);
+                    Serial.printf("[FeedingTask] AUTO: Bắt đầu cho ăn lúc %02d:%02d\n", t->tm_hour, t->tm_min);
                 }
             } else {
                 // Motor đang chạy - kiểm tra timeout 20 giây hoặc user cancel
                 bool timeout = millis() - s_MotorStartTime > 20000;
                 
-                // Kiểm nếu user cancel (Firebase state = false)
                 CommandData_t checkCmd;
                 bool userCancel = false;
-                if (xQueuePeek(xQueue_Commands, &checkCmd, 0) == pdPASS) {
+                if (xQueuePeek(xQueue_FeedCommands, &checkCmd, 0) == pdPASS) {
                     if (checkCmd.type == CMD_THUCAN_AUTO && checkCmd.value < 0.5f) {
                         userCancel = true;
                     }
@@ -239,7 +203,7 @@ void feedingTaskLoop(void* unused) {
                     
                     // Chỉ ghi log nếu thực sự đã cho ăn (dispensed > 0)
                     if (dispensed > 0) {
-                        logFeedLog(dispensed, "auto");
+                        // Log lịch sử được Android App ghi trực tiếp lên Firebase
                     }
                     s_CurrentMode = FEED_IDLE;
                     
@@ -269,7 +233,7 @@ void feedingTaskLoop(void* unused) {
                 // Kiểm nếu user cancel (Firebase thay đổi target hoặc state)
                 CommandData_t checkCmd;
                 bool userCancel = false;
-                if (xQueuePeek(xQueue_Commands, &checkCmd, 0) == pdPASS) {
+                if (xQueuePeek(xQueue_FeedCommands, &checkCmd, 0) == pdPASS) {
                     if (checkCmd.type == CMD_THUCAN_GRAM) {
                         if (checkCmd.value <= 0) {
                             userCancel = true;  // User set target <= 0
@@ -289,10 +253,7 @@ void feedingTaskLoop(void* unused) {
                     float dispensed = s_GramStartWeight - currentWeight;
                     if (dispensed < 0) dispensed = 0;
                     
-                    // Chỉ ghi log nếu thực sự đã cho ăn (dispensed > 0)
-                    if (dispensed > 0) {
-                        logFeedLog(dispensed, "gram");
-                    }
+                    // Đã dời logic ghi log lên ngay lúc nhận lệnh để hiển thị ngay lập tức (instant)
                     s_CurrentMode = FEED_IDLE;
                     s_GramTarget = 0;
                     
@@ -379,4 +340,8 @@ float FeedingTask_GetDispensedGram() {
         return s_GramStartWeight - readWeightFromLoadCell();
     }
     return 0.0f;
+}
+
+float FeedingTask_GetCurrentWeight() {
+    return readWeightFromLoadCell();
 }

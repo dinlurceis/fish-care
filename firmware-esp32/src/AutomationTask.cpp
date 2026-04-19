@@ -76,7 +76,7 @@ void automationTaskLoop(void* unused) {
             
             CommandData_t cmd;
             memset(&cmd, 0, sizeof(cmd));
-            if (xQueueReceive(xQueue_Commands, &cmd, 0) == pdPASS) {
+            if (xQueueReceive(xQueue_AutoCommands, &cmd, 0) == pdPASS) {
                 switch (cmd.type) {
                     case CMD_GUONG_ON:
                         startOxy();

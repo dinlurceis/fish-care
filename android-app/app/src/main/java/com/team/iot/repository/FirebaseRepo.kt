@@ -25,32 +25,35 @@ class FirebaseRepo @Inject constructor() {
             val daysInMillis = days * 86400000L
             val startTimestamp = currentTimeMillis - daysInMillis
 
-            // Query Firebase Realtime DB node "sensor_logs" orderByChild "timestamp" startAt [timestamp đó]
-            val sensorLogsRef = database.getReference("sensor_logs")
+            // Query Firebase Realtime DB node "tds_logs" theo epoch timestamp
+            val sensorLogsRef = database.getReference("tds_logs")
             
-            sensorLogsRef.orderByChild("timestamp")
-                .startAt(startTimestamp.toDouble())
+            sensorLogsRef.orderByKey()
+                .startAt(startTimestamp.toString())
                 .get()
                 .addOnSuccessListener { snapshot ->
                     val sensorDataList = mutableListOf<SensorData>()
                     
                     snapshot.children.forEach { dataSnapshot ->
                         try {
-                            val timestamp = dataSnapshot.child("timestamp").getValue(Long::class.java) ?: 0L
-                            val tds = dataSnapshot.child("tds").getValue(Double::class.java) ?: 0.0
-                            val turbidity = dataSnapshot.child("turbidity").getValue(Double::class.java) ?: 0.0
-                            val temperature = dataSnapshot.child("temperature").getValue(Double::class.java) ?: 0.0
-                            val ph = dataSnapshot.child("ph").getValue(Double::class.java) ?: 0.0
+                            val timestampStr = dataSnapshot.key ?: ""
+                            val timestamp = timestampStr.toLongOrNull() ?: 0L
                             
-                            sensorDataList.add(
-                                SensorData(
-                                    timestamp = timestamp,
-                                    tds = tds,
-                                    turbidity = turbidity,
-                                    temperature = temperature,
-                                    ph = ph
+                            val tdsValue = dataSnapshot.getValue(Double::class.java) ?: 0.0
+                            
+                            // Vì Firebase query key dạng text nên cẩn thận lọc thêm cho chắc
+                            if (timestamp >= startTimestamp) {
+                                // Gán temperature = tds để vẽ biểu đồ TDS trên LineChart tái sử dụng mã
+                                sensorDataList.add(
+                                    SensorData(
+                                        timestamp = timestamp,
+                                        tds = tdsValue,
+                                        turbidity = 0.0,
+                                        temperature = tdsValue, // Trick để vẽ biểu đồ TDS chung hàm ChartScreen
+                                        ph = 0.0
+                                    )
                                 )
-                            )
+                            }
                         } catch (e: Exception) {
                             Log.e(TAG, "Error parsing sensor data: ${e.message}", e)
                         }

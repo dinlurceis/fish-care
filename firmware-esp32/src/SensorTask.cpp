@@ -2,6 +2,7 @@
 #include "sensors/DS18B20Sensor.h"
 #include "sensors/TdsSensor.h"
 #include "sensors/TurbiditySensor.h"
+#include "FeedingTask.h"
 
 // ============================================================
 //  SENSORTASK - Đọc cảm biến & đẩy vào Queue
@@ -47,8 +48,8 @@ void sensorTaskLoop(void* unused) {
         // 3. Đọc Độ đục (direct ADC read - không MA)
         reading.turbidity = s_turbiditySensor.readTurbidity();
         
-        // 4. Weight: FeedingTask sẽ cập nhật (khi mô-tơ chạy)
-        reading.weight = 0.0f;
+        // 4. Weight: Đọc từ LoadCell thông qua FeedingTask
+        reading.weight = FeedingTask_GetCurrentWeight();
         
         // ───── Đẩy vào Queue ─────
         // xQueueOverwrite: luôn ghi đè data cũ, luôn giữ data mới nhất
@@ -57,8 +58,8 @@ void sensorTaskLoop(void* unused) {
         }
         
         // ───── Debug Serial ─────
-        Serial.printf("[SensorTask] Temp=%.1f°C | TDS=%.1fppm | Turbidity=%d | ms=%lu\n",
-                      reading.temperature, reading.tds, reading.turbidity, reading.timestamp);
+        Serial.printf("[SensorTask] Temp=%.1f°C | TDS=%.1fppm | Turbidity=%d | Weight=%.1fg | ms=%lu\n",
+                      reading.temperature, reading.tds, reading.turbidity, reading.weight, reading.timestamp);
         
         // ───── Chờ trước lần đọc kế tiếp ─────
         // Mặc định 2 giây (từ Config.h: SENSOR_SAMPLE_INTERVAL_MS)

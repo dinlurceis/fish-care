@@ -83,7 +83,7 @@ class NotificationViewModel @Inject constructor(
         }
 
         val androidNotif = NotificationCompat.Builder(ctx, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(notif.title)
             .setContentText(notif.message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(notif.message))

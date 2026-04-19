@@ -72,8 +72,14 @@ void connectWiFi() {
     if (WiFi.status() == WL_CONNECTED) {
         s_WiFiConnected = true;
         s_RetryDelay = 2000;  // Reset retry delay
+        
+        // Ép Google DNS (8.8.8.8) SAU KHI đã có DHCP → IP không bị 255.255.255.255
+        IPAddress dns1(8, 8, 8, 8);
+        IPAddress dns2(8, 8, 4, 4);
+        WiFi.config(WiFi.localIP(), WiFi.gatewayIP(), WiFi.subnetMask(), dns1, dns2);
+        
         Serial.printf("\n[NetworkTask] ✓ WiFi kết nối: %s\n", WiFi.SSID().c_str());
-        Serial.printf("[NetworkTask] IP: %s\n", WiFi.localIP().toString().c_str());
+        Serial.printf("[NetworkTask] IP: %s | DNS: 8.8.8.8\n", WiFi.localIP().toString().c_str());
     } else {
         s_WiFiConnected = false;
         Serial.println("\n[NetworkTask] ✗ Không kết nối được WiFi");
@@ -87,18 +93,19 @@ void connectWiFi() {
 void initFirebase() {
     Serial.println("[NetworkTask] Khởi tạo Firebase...");
     
-    // Cấu hình Firebase
     fbConfig.database_url = FIREBASE_HOST;
-    fbConfig.api_key = FIREBASE_API_KEY;
-    fbAuth.user.email = USER_EMAIL;
-    fbAuth.user.password = USER_PASSWORD;
+    fbConfig.signer.tokens.legacy_token = FIREBASE_DB_SECRET;
     
-    // Bắt đầu Firebase
-    Firebase.begin(&fbConfig, &fbAuth);
+    // Timeout ngắn để SSL không block lâu hơn 60s WDT
+    fbConfig.timeout.serverResponse = 6000;    // 6s
+    fbConfig.timeout.socketConnection = 5000;  // 5s TCP
+    fbConfig.timeout.sslHandshake = 5000;      // 5s SSL handshake
+    
+    Firebase.begin(&fbConfig, nullptr);
     Firebase.reconnectNetwork(true);
     
     s_FirebaseReady = true;
-    Serial.println("[NetworkTask] ✓ Firebase khởi tạo xong");
+    Serial.printf("[NetworkTask] ✓ Firebase init xong | Database: %s\n", FIREBASE_HOST);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -109,101 +116,55 @@ void initFirebase() {
 void checkAndPushAlerts(const SensorData_t& data);
 
 void syncSensorDataToFirebase(const SensorData_t& data) {
-    if (!s_FirebaseReady || !Firebase.ready()) {
-        return;
+    // Log trạng thái để debug
+    if (!s_FirebaseReady) return;
+    
+    bool ntpSynced = (time(nullptr) > 24 * 3600);
+    if (!ntpSynced) {
+        static unsigned long lastNtpMsg = 0;
+        if (millis() - lastNtpMsg > 30000) {
+            Serial.println("[NetworkTask] ⏳ NTP chưa sync - Gửi data với timestamp mặc định...");
+            lastNtpMsg = millis();
+        }
     }
     
-    // ── Đẩy dữ liệu cảm biến lên Firebase ──
-    Firebase.setFloat(fbData, "/aquarium/temperature", data.temperature);
-    Firebase.setFloat(fbData, "/aquarium/water_quality", data.tds);
-    Firebase.setInt(fbData,   "/aquarium/ts300b", data.turbidity);
-    Firebase.setFloat(fbData, "/aquarium/weight", data.weight);
+    // Đẩy dữ liệu cảm biến Real-time lên Firebase
+    bool ok = true;
+    ok &= Firebase.setFloat(fbData, "/aquarium/temperature", data.temperature);
+    ok &= Firebase.setFloat(fbData, "/aquarium/water_quality", data.tds);
+    ok &= Firebase.setInt(fbData,   "/aquarium/ts300b", data.turbidity);
+    ok &= Firebase.setFloat(fbData, "/aquarium/weight", data.weight);
     
-    // ── Kiểm tra ngưỡng và push alert ──
-    checkAndPushAlerts(data);
-    
-    Serial.printf("[NetworkTask] Firebase sync: Temp=%.1f, TDS=%.1f, Turbidity=%d, Weight=%.1f\n",
-                  data.temperature, data.tds, data.turbidity, data.weight);
-}
-
-// ─────────────────────────────────────────────────────────
-//  PUSH ALERT: ESP32 tự ghi /notifications khi vượt ngưỡng
-//  Hoàn toàn miễn phí, không cần Cloud Functions!
-// ─────────────────────────────────────────────────────────
-
-// Debounce: các biến lưu millis() lần alert cuối
-static unsigned long s_lastAlertTds     = 0;
-static unsigned long s_lastAlertTempHi  = 0;
-static unsigned long s_lastAlertTempLo  = 0;
-static unsigned long s_lastAlertTurb    = 0;
-const  unsigned long ALERT_DEBOUNCE_MS  = 10UL * 60 * 1000; // 10 phút
-
-void pushAlertToFirebase(const char* type, const char* title, const char* message) {
-    // Lấy NTP timestamp (Unix ms)
-    time_t now = time(nullptr);
-    long long tsMs = (long long)now * 1000LL;
-    
-    // Tạo push key dạng "/notifications/esp_<millis>"
-    String path = "/notifications/esp_" + String(millis());
-    
-    // Ghi từng trường (FirebaseESP32 không có updateNode có nested JSON dễ, dùng setJSON)
-    FirebaseJson json;
-    json.set("type",      type);
-    json.set("title",     title);
-    json.set("message",   message);
-    json.set("timestamp", tsMs);
-    json.set("read",      false);
-    
-    if (Firebase.setJSON(fbData, path, json)) {
-        Serial.printf("[NetworkTask] ✓ Alert pushed: %s\n", title);
+    static int dnsErrorCount = 0;
+    if (ok) {
+        dnsErrorCount = 0;
+        Serial.printf("[NetworkTask] ✓ Firebase sync OK: Temp=%.1f, TDS=%.1f\n", data.temperature, data.tds);
     } else {
-        Serial.printf("[NetworkTask] ⚠ Alert push fail: %s\n", fbData.errorReason().c_str());
-    }
-}
-
-void checkAndPushAlerts(const SensorData_t& data) {
-    unsigned long now = millis();
-    
-    // TDS quá thấp (ngưỡng quan trọng nhất theo PROJECT_CONTEXT dòng 113)
-    if (data.tds < 10.0f && (now - s_lastAlertTds > ALERT_DEBOUNCE_MS)) {
-        s_lastAlertTds = now;
-        pushAlertToFirebase("water_quality",
-            u8"🚨 Chất lượng nước nguy hiểm!",
-            u8"TDS đang rất thấp - kiểm tra ngay!");
-    }
-    // TDS quá cao
-    else if (data.tds > 400.0f && (now - s_lastAlertTds > ALERT_DEBOUNCE_MS)) {
-        s_lastAlertTds = now;
-        char msg[80];
-        snprintf(msg, sizeof(msg), "TDS: %.0f ppm (an toan <= 400 ppm)", data.tds);
-        pushAlertToFirebase("water_quality",
-            u8"⚠ Chất lượng nước cao", msg);
+        String reason = fbData.errorReason();
+        Serial.printf("[NetworkTask] ⚠️ Firebase sync FAIL: %s\n", reason.c_str());
+        
+        // Nếu lỗi DNS liên tục -> báo WiFi reset ở loop chính
+        if (reason.indexOf("DNS") != -1 || reason.indexOf("connection refused") != -1) {
+            dnsErrorCount++;
+            if (dnsErrorCount > 5) {
+                Serial.println("[NetworkTask] 🚨 DNS Failed liên tục -> Yêu cầu reconnect WiFi!");
+                WiFi.disconnect(); 
+                dnsErrorCount = 0;
+            }
+        }
     }
     
-    // Nhi\u1ec7t \u0111\u1ed9 qu\u00e1 cao
-    if (data.temperature > 33.0f && (now - s_lastAlertTempHi > ALERT_DEBOUNCE_MS)) {
-        s_lastAlertTempHi = now;
-        char msg[80];
-        snprintf(msg, sizeof(msg), u8"Nhiệt độ: %.1f°C (an toàn <= 33°C)", data.temperature);
-        pushAlertToFirebase("temperature",
-            u8"🌡 Nhiệt độ nước quá cao", msg);
-    }
-    // Nhi\u1ec7t \u0111\u1ed9 qu\u00e1 th\u1ea5p
-    if (data.temperature < 20.0f && (now - s_lastAlertTempLo > ALERT_DEBOUNCE_MS)) {
-        s_lastAlertTempLo = now;
-        char msg[80];
-        snprintf(msg, sizeof(msg), u8"Nhiệt độ: %.1f°C (an toàn >= 20°C)", data.temperature);
-        pushAlertToFirebase("temperature",
-            u8"❄ Nhiệt độ nước quá thấp", msg);
-    }
-    
-    // Độ đục cao
-    if (data.turbidity > 8.0f && (now - s_lastAlertTurb > ALERT_DEBOUNCE_MS)) {
-        s_lastAlertTurb = now;
-        char msg[80];
-        snprintf(msg, sizeof(msg), u8"Độ đục: %.1f NTU (an toàn <= 8)", data.turbidity);
-        pushAlertToFirebase("water_quality",
-            u8"🌫 Độ đục nước cao", msg);
+    // ── Ghi lịch sử biểu đồ (Chart) vào /tds_logs mỗi 60 giây ──
+    static unsigned long s_lastChartSync = 0;
+    if (millis() - s_lastChartSync > 60000 || s_lastChartSync == 0) {
+        time_t now = time(nullptr);
+        if (now > 24 * 3600) { // NTP đã sync
+            long long tsMs = (long long)now * 1000LL;
+            String path = "/tds_logs/" + String(tsMs);
+            Firebase.setFloat(fbData, path, data.tds);
+            Serial.printf("[NetworkTask] ✓ Chart Saved: ts=%lld, tds=%.1f\n", tsMs, data.tds);
+            s_lastChartSync = millis();
+        }
     }
 }
 
@@ -212,7 +173,7 @@ void checkAndPushAlerts(const SensorData_t& data) {
 // ─────────────────────────────────────────────────────────
 
 void pollCommandsFromFirebase() {
-    if (!s_FirebaseReady || !Firebase.ready() || !xQueue_Commands) {
+    if (!s_FirebaseReady || !Firebase.ready() || !xQueue_FeedCommands || !xQueue_AutoCommands) {
         return;
     }
     
@@ -224,7 +185,8 @@ void pollCommandsFromFirebase() {
             .value = 0,
             .timestamp = millis()
         };
-        xQueueSend(xQueue_Commands, &cmd, 0);
+        xQueueSend(xQueue_FeedCommands, &cmd, 0);
+        xQueueSend(xQueue_AutoCommands, &cmd, 0);
         Serial.printf("[NetworkTask] CMD_GUONG: %s\n", oxyState ? "ON" : "OFF");
     }
     
@@ -247,21 +209,23 @@ void pollCommandsFromFirebase() {
     // Auto mode
     if (feedMode == "auto") {
         CommandData_t cmd = {
-            .type = feedState ? CMD_THUCAN_AUTO : CMD_THUCAN_AUTO,  // Trạng thái ON/OFF qua state
+            .type = CMD_THUCAN_AUTO,
             .value = feedState ? 1.0f : 0.0f,
             .timestamp = millis()
         };
-        xQueueSend(xQueue_Commands, &cmd, 0);
+        xQueueSend(xQueue_FeedCommands, &cmd, 0);
+        xQueueSend(xQueue_AutoCommands, &cmd, 0);
         Serial.printf("[NetworkTask] CMD_THUCAN_AUTO: state=%d\n", feedState);
     }
     // Gram mode
     else if (feedMode == "gram") {
         CommandData_t cmd = {
             .type = CMD_THUCAN_GRAM,
-            .value = targetGram,  // Gram amount
+            .value = targetGram,
             .timestamp = millis()
         };
-        xQueueSend(xQueue_Commands, &cmd, 0);
+        xQueueSend(xQueue_FeedCommands, &cmd, 0);
+        xQueueSend(xQueue_AutoCommands, &cmd, 0);
         Serial.printf("[NetworkTask] CMD_THUCAN_GRAM: target=%.1fg\n", targetGram);
     }
     // Manual mode
@@ -271,7 +235,8 @@ void pollCommandsFromFirebase() {
             .value = feedState ? 1.0f : 0.0f,
             .timestamp = millis()
         };
-        xQueueSend(xQueue_Commands, &cmd, 0);
+        xQueueSend(xQueue_FeedCommands, &cmd, 0);
+        xQueueSend(xQueue_AutoCommands, &cmd, 0);
         Serial.printf("[NetworkTask] CMD_THUCAN_MANUAL: state=%d\n", feedState);
     }
 }
@@ -281,13 +246,13 @@ void pollCommandsFromFirebase() {
 // ─────────────────────────────────────────────────────────
 
 void networkTaskLoop(void* unused) {
-    // ───── Khởi tạo ─────
     Serial.println("[NetworkTask] Bắt đầu khởi tạo...");
+    // NetworkTask KHÔNG đăng ký vào WDT vì Firebase SSL có thể block lâu
     
-    // Đăng ký vào Watchdog
-    esp_task_wdt_add(NULL);
+    static bool ntpConfigured = false;
+    static unsigned long lastFirebaseRetry = 0;
+    static unsigned long lastSensorSync = 0;
     
-    // ───── Vòng lặp chính ─────
     for (;;) {
         
         // ════════════════════════════════════════
@@ -295,81 +260,76 @@ void networkTaskLoop(void* unused) {
         // ════════════════════════════════════════
         
         if (WiFi.status() != WL_CONNECTED) {
-            // WiFi đứt - cố tái kết nối
+            isWiFiConnected = false;
             if (millis() - s_LastRetryTime > s_RetryDelay) {
                 Serial.printf("[NetworkTask] ⚠️  WiFi đứt - Retry sau %lums...\n", s_RetryDelay);
-                
                 connectWiFi();
                 s_LastRetryTime = millis();
-                
-                // Exponential backoff: tăng delay lên
+                // Reset Firebase khi WiFi reconnect
+                s_FirebaseReady = false;
                 uint32_t newDelay = s_RetryDelay * 2;
                 s_RetryDelay = (newDelay > WIFI_RETRY_MAX_MS) ? WIFI_RETRY_MAX_MS : newDelay;
             }
-            
-            // Set flag WiFi DOWN cho AutomationTask (edge logic)
-            isWiFiConnected = false;
-            
         } else {
-            // WiFi còn kết nối
             isWiFiConnected = true;
             
             // ════════════════════════════════════════
-            //  2. KHỞI TẠO TIME NTP (lần đầu tiên)
+            //  2. NTP - Non-blocking: gọi 1 lần rồi thôi
             // ════════════════════════════════════════
             
-            static bool timeConfigured = false;
-            if (!timeConfigured) {
-                configTime(7 * 3600, 0, "pool.ntp.org");  // UTC+7 (Vietnam)
-                // Chờ time được sync (timeout 5 giây)
-                int syncRetries = 0;
-                while (time(nullptr) < 24 * 3600 && syncRetries < 50) {  // < 1 ngày sau epoch = chưa sync
-                    delay(100);
-                    syncRetries++;
-                }
-                if (time(nullptr) > 24 * 3600) {
-                    timeConfigured = true;
-                    Serial.printf("[NetworkTask] ✓ NTP time synced: %lu\n", time(nullptr));
-                } else {
-                    Serial.println("[NetworkTask] ⚠️  NTP time sync timeout");
-                }
+            if (!ntpConfigured) {
+                // Thêm nhiều NTP server để tăng khả năng thành công trên 4G
+                configTime(7 * 3600, 0, "time.google.com", "pool.ntp.org", "time.nist.gov");
+                ntpConfigured = true;
+                Serial.println("[NetworkTask] 🌐 Đã yêu cầu NTP sync (background)...");
             }
             
             // ════════════════════════════════════════
-            //  3. KHỞI TẠO FIREBASE (lần đầu tiên)
+            //  3. KHỞI TẠO / RETRY FIREBASE
             // ════════════════════════════════════════
             
             if (!s_FirebaseReady) {
                 initFirebase();
+                lastFirebaseRetry = millis();
+            } else if (!Firebase.ready()) {
+                // Firebase mất kết nối → retry sau 15 giây
+                if (millis() - lastFirebaseRetry > 15000) {
+                    Serial.println("[NetworkTask] ⚠️  Firebase mất kết nối - re-init...");
+                    s_FirebaseReady = false;  // Trigger re-init ở vòng lặp tiếp theo
+                    lastFirebaseRetry = millis();
+                }
             }
             
             // ════════════════════════════════════════
-            //  4. ĐỒ THỐNG KÊ DỮ LIỆU CẢM BIẾN
+            //  4 & 5. SYNC & POLL (chỉ khi Firebase sẵn sàng)
             // ════════════════════════════════════════
             
-            SensorData_t sensorData = {0};
-            if (xQueuePeek(xQueue_SensorData, &sensorData, 0) == pdPASS) {
-                syncSensorDataToFirebase(sensorData);
+            if (s_FirebaseReady && Firebase.ready()) {
+                // Sync sensor data mỗi 2 giây
+                if (millis() - lastSensorSync > 2000) {
+                    SensorData_t sensorData = {0};
+                    if (xQueuePeek(xQueue_SensorData, &sensorData, 0) == pdPASS) {
+                        syncSensorDataToFirebase(sensorData);
+                    }
+                    lastSensorSync = millis();
+                }
+                
+                // Poll lệnh từ Firebase mỗi vòng lặp
+                pollCommandsFromFirebase();
             }
-            
-            // ════════════════════════════════════════
-            //  5. ĐỌC LỆNH TỪ FIREBASE
-            // ════════════════════════════════════════
-            
-            pollCommandsFromFirebase();
         }
         
-        // ───── Feed Watchdog (bảo vệ NTask treo) ─────
-        // Nếu NTask treo quá 20s mạch sẽ tự reset
-        esp_task_wdt_reset();
-        
         // ───── Debug Serial ─────
-        Serial.printf("[NetworkTask] WiFi=%s | Firebase=%s\n",
-                      s_WiFiConnected ? "ON" : "OFF",
-                      s_FirebaseReady && Firebase.ready() ? "OK" : "DOWN");
+        static unsigned long lastDebug = 0;
+        if (millis() - lastDebug > 5000) {
+            Serial.printf("[NetworkTask] WiFi=%s | Firebase=%s | Time=%s\n",
+                          isWiFiConnected ? "ON" : "OFF",
+                          Firebase.ready() ? "OK" : "DOWN",
+                          time(nullptr) > 24*3600 ? "SYNCED" : "NO_NTP");
+            lastDebug = millis();
+        }
         
-        // ───── Delay ─────
-        vTaskDelay(pdMS_TO_TICKS(2000));  // Check mỗi 2 giây
+        vTaskDelay(pdMS_TO_TICKS(800));
     }
 }
 
@@ -385,11 +345,11 @@ void NetworkTask_init(UBaseType_t priority, uint16_t stackSize) {
     BaseType_t xReturned = xTaskCreatePinnedToCore(
         networkTaskLoop,          // Hàm task
         "NetworkTask",            // Tên task
-        stackSize,                // Stack size (8KB vì Firebase dùng bộ nhớ)
+        10240,                    // Stack size (Tăng lên 10KB cho SSL)
         nullptr,                  // Parameter
         priority,                 // Priority (4 = Highest)
         &s_TaskHandle,            // Handle output
-        0                         // Core 0 (WiFi)
+        1                         // Core 1 (tránh block IDLE0 trên Core 0)
     );
     
     if (xReturned == pdPASS) {
@@ -407,32 +367,4 @@ bool NetworkTask_IsFirebaseConnected() {
     return s_FirebaseReady && Firebase.ready();
 }
 
-void NetworkTask_LogFeedHistory(float grams, const String& mode, const String& timeStr) {
-    if (!s_FirebaseReady || !Firebase.ready()) {
-        Serial.printf("[NetworkTask] ⚠️  Firebase not ready, skipping log write\n");
-        return;
-    }
-    
-    // Đọc counter hiện tại từ /logs/counter
-    int logCounter = 1;
-    if (Firebase.getInt(fbData, "/logs/counter")) {
-        logCounter = fbData.intData();
-    }
-    
-    // Tạo path cho log mới: /logs/log{counter}
-    String basePath = "/logs/log" + String(logCounter);
-    
-    // Ghi thông tin cho ăn
-    if (Firebase.setFloat(fbData, basePath + "/gram", grams) &&
-        Firebase.setString(fbData, basePath + "/mode", mode) &&
-        Firebase.setString(fbData, basePath + "/time", timeStr)) {
-        
-        // Tăng counter cho log tiếp theo
-        Firebase.setInt(fbData, "/logs/counter", logCounter + 1);
-        
-        Serial.printf("[NetworkTask] ✓ Feed log saved: log%d (%.1fg, %s, %s)\n", 
-                     logCounter, grams, mode.c_str(), timeStr.c_str());
-    } else {
-        Serial.printf("[NetworkTask] ⚠️  Failed to write feed log: %s\n", fbData.errorReason().c_str());
-    }
-}
+

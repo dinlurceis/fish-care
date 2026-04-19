@@ -83,7 +83,7 @@ class NotificationCheckWorker(
             if (!manager.areNotificationsEnabled()) return
         }
         val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))

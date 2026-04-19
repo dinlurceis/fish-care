@@ -150,23 +150,9 @@ fun ChartScreen(
         ) {
 
             // ══════════════════════════════════════════════════════════════════
-            // SECTION 2: Thống kê trung bình
+            // Đã ẩn các thẻ TDS, Nhiệt độ, Độ đục theo yêu cầu User
+            // Chỉ hiển thị Chart và AI
             // ══════════════════════════════════════════════════════════════════
-            Text(
-                text = "📈 Số liệu trung bình ($selectedDays ngày qua)",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF0E5A2A)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatCard("TDS",     String.format("%.1f", avgTds),      "ppm",  Modifier.weight(1f))
-                StatCard("Nhiệt độ", String.format("%.1f", avgTemp),    "°C",   Modifier.weight(1f))
-                StatCard("Độ đục",  String.format("%.1f", avgTurbidity),"NTU",  Modifier.weight(1f))
-            }
 
             // ══════════════════════════════════════════════════════════════════
             // SECTION 3: Timeline log
@@ -175,32 +161,64 @@ fun ChartScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Text(
-                            text = "📂 ${chartData.size} bản ghi",
+                            text = "💧 Biểu đồ nồng độ TDS (ppm)",
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
+                            fontSize = 15.sp,
                             color = Color(0xFF0E5A2A)
                         )
+                        
+                        Box(modifier = Modifier.fillMaxWidth().height(180.dp).padding(vertical = 12.dp)) {
+                            val maxTemp = chartData.maxOfOrNull { it.tds }?.takeIf { it > 0 } ?: 200.0
+                            val minTemp = chartData.minOfOrNull { it.tds }?.takeIf { it > 0 } ?: 0.0
+                            val range = if (maxTemp == minTemp) 1.0 else maxTemp - minTemp
+                            
+                            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
+                                val w = size.width
+                                val h = size.height
+                                val step = if (chartData.size > 1) w / (chartData.size - 1) else w
+                                
+                                val path = androidx.compose.ui.graphics.Path()
+                                chartData.forEachIndexed { i, d ->
+                                    val x = i * step
+                                    val y = h - (((d.tds - minTemp) / range) * h).toFloat()
+                                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                                    drawCircle(
+                                        color = Color(0xFF1565C0),
+                                        radius = 4.dp.toPx(),
+                                        center = androidx.compose.ui.geometry.Offset(x, y)
+                                    )
+                                }
+                                drawPath(
+                                    path = path,
+                                    color = Color(0xFF2196F3), /* Xanh TDS */
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                        width = 3.dp.toPx(),
+                                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                        join = androidx.compose.ui.graphics.StrokeJoin.Round
+                                    )
+                                )
+                            }
+                        }
+                        
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(text = chartData.firstOrNull()?.timestamp?.let { formatDate(it) } ?: "N/A", fontSize = 12.sp, color = Color.Gray)
+                            Text(text = "Thời gian →", fontSize = 12.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.Bold)
+                            Text(text = chartData.lastOrNull()?.timestamp?.let { formatDate(it) } ?: "N/A", fontSize = 12.sp, color = Color.Gray)
+                        }
+                        
                         Text(
-                            text = "Từ ${chartData.firstOrNull()?.timestamp?.let { formatDate(it) } ?: "N/A"}" +
-                                    " → ${chartData.lastOrNull()?.timestamp?.let { formatDate(it) } ?: "N/A"}",
+                            text = "TDS mới nhất: ${String.format("%.0f", chartData.lastOrNull()?.tds ?: 0.0)} ppm",
                             fontSize = 13.sp,
-                            color = Color.Gray
-                        )
-                        Text(
-                            text = "Dữ liệu mới nhất: TDS=${
-                                String.format("%.0f", chartData.lastOrNull()?.tds ?: 0.0)
-                            } ppm | Nhiệt=${
-                                String.format("%.1f", chartData.lastOrNull()?.temperature ?: 0.0)
-                            }°C",
-                            fontSize = 13.sp
+                            modifier = Modifier.padding(top = 4.dp),
+                            color = Color.DarkGray
                         )
                     }
                 }

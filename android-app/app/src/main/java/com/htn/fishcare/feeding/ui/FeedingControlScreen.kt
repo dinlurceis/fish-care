@@ -215,20 +215,21 @@ fun FeedingControlScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
+                                    val isManualActive = uiState.controlState.mode == FeedMode.MANUAL && uiState.controlState.isEnabled
                                     Button(
                                         onClick = { onSetManual(true) },
                                         modifier = Modifier.weight(1f).height(48.dp),
                                         shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = GREEN),
+                                        colors = ButtonDefaults.buttonColors(containerColor = if(isManualActive) GREEN else Color(0xFFCFD8DC)),
                                         enabled = !uiState.isSaving
-                                    ) { Text("▶ Bật", fontWeight = FontWeight.Bold) }
+                                    ) { Text("▶ Bật", color = if(isManualActive) Color.White else Color(0xFF2C3E50), fontWeight = FontWeight.Bold) }
                                     Button(
                                         onClick = { onSetManual(false) },
                                         modifier = Modifier.weight(1f).height(48.dp),
                                         shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCFD8DC)),
+                                        colors = ButtonDefaults.buttonColors(containerColor = if(!isManualActive) Color(0xFFE53935) else Color(0xFFCFD8DC)),
                                         enabled = !uiState.isSaving
-                                    ) { Text("⏹ Tắt", color = Color(0xFF2C3E50), fontWeight = FontWeight.Bold) }
+                                    ) { Text("⏹ Tắt", color = if(!isManualActive) Color.White else Color(0xFF2C3E50), fontWeight = FontWeight.Bold) }
                                 }
                             }
                         }
@@ -261,18 +262,21 @@ fun FeedingControlScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
+                                    val isGramActive = uiState.controlState.mode == FeedMode.GRAM && uiState.controlState.isEnabled
                                     Button(
                                         onClick = onStartGram,
                                         modifier = Modifier.weight(1f).height(48.dp),
                                         shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = GREEN),
+                                        colors = ButtonDefaults.buttonColors(containerColor = if(isGramActive) GREEN else Color(0xFFCFD8DC)),
                                         enabled = !uiState.isSaving
-                                    ) { Text("🐟 Cho ăn", fontWeight = FontWeight.Bold) }
-                                    TextButton(
+                                    ) { Text("🐟 Cho ăn", color = if(isGramActive) Color.White else Color(0xFF2C3E50), fontWeight = FontWeight.Bold) }
+                                    Button(
                                         onClick = onStopGram,
                                         enabled = !uiState.isSaving,
-                                        modifier = Modifier.weight(1f).height(48.dp)
-                                    ) { Text("⏹ Dừng", color = Color.Gray, fontWeight = FontWeight.Bold) }
+                                        modifier = Modifier.weight(1f).height(48.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = if(!isGramActive) Color(0xFFE53935) else Color(0xFFCFD8DC))
+                                    ) { Text("⏹ Dừng", color = if(!isGramActive) Color.White else Color(0xFF2C3E50), fontWeight = FontWeight.Bold) }
                                 }
                             }
                         }
