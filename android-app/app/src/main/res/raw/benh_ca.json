@@ -1,0 +1,567 @@
+{
+  "ca_ro_phi": {
+    "benh": [
+      {
+        "ten_benh": "Viêm ruột do vi khuẩn Aeromonas hydrophila",
+        "trieu_chung": [
+          "Cá bơi tách đàn, lờ đờ",
+          "Da chuyển màu tối hơn",
+          "Bụng chướng to",
+          "Hậu môn sưng đỏ, có dịch nhầy chảy ra"
+        ],
+        "nguyen_nhan": "Nhiễm vi khuẩn Aeromonas hydrophila, thường do môi trường nước ô nhiễm hoặc thức ăn kém chất lượng.",
+        "xu_ly": {
+          "thuoc": "Doxycycline",
+          "phuong_phap": "Trộn thuốc vào thức ăn cho cá ăn liên tục.",
+          "lieu_luong": "50–75 mg/kg cá/ngày trong 5–7 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh xuất huyết do vi khuẩn Streptococcus spp.",
+        "trieu_chung": [
+          "Cá bơi lờ đờ, mất thăng bằng",
+          "Xuất huyết ở da, mang và hậu môn",
+          "Mắt lồi, mang nhợt nhạt"
+        ],
+        "nguyen_nhan": "Nhiễm vi khuẩn Streptococcus spp., thường xảy ra khi môi trường nước bị ô nhiễm.",
+        "xu_ly": {
+          "thuoc": "Florfenicol",
+          "phuong_phap": "Trộn thuốc vào thức ăn cho cá ăn liên tục.",
+          "lieu_luong": "15 mg/kg cá/ngày trong 5–7 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh nấm thủy mi (Saprolegniasis)",
+        "trieu_chung": [
+          "Xuất hiện các vùng trắng xám trên da",
+          "Nấm phát triển thành các búi trắng như bông",
+          "Cá bơi lờ đờ, giảm ăn"
+        ],
+        "nguyen_nhan": "Nhiễm nấm Saprolegnia spp., thường do môi trường nước lạnh và ô nhiễm.",
+        "xu_ly": {
+          "thuoc": "Malachite Green",
+          "phuong_phap": "Tắm cá bằng dung dịch thuốc.",
+          "lieu_luong": "0.1–0.2 ppm trong 1 giờ, lặp lại mỗi 3 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh trùng bánh xe (Trichodiniasis)",
+        "trieu_chung": [
+          "Cá bơi lờ đờ, nổi từng đàn trên mặt nước",
+          "Da có màu xám, nhiều nhớt trắng đục",
+          "Mang bạc trắng"
+        ],
+        "nguyen_nhan": "Nhiễm trùng bánh xe Trichodina spp., thường do mật độ nuôi cao và vệ sinh kém.",
+        "xu_ly": {
+          "thuoc": "Formalin 37%",
+          "phuong_phap": "Tắm cá hoặc xử lý toàn bộ ao bằng Formalin.",
+          "lieu_luong": "150–200 ppm trong 1 giờ, lặp lại sau 2 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh trùng quả dưa (Ichthyophthiriasis)",
+        "trieu_chung": [
+          "Cá bơi nổi thành từng đàn trên mặt nước",
+          "Da, mang và vây cá có nhiều hạt trắng nhỏ",
+          "Cá quẫy nhiều do ngứa ngáy"
+        ],
+        "nguyen_nhan": "Nhiễm trùng quả dưa Ichthyophthirius multifiliis, thường do thay đổi nhiệt độ đột ngột.",
+        "xu_ly": {
+          "thuoc": "Formalin 37%",
+          "phuong_phap": "Tắm cá hoặc xử lý toàn bộ ao bằng Formalin.",
+          "lieu_luong": "150–200 ppm trong 1 giờ, lặp lại sau 2 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh gan thận mủ",
+        "trieu_chung": [
+          "Bụng to bất thường",
+          "Xuất huyết da",
+          "Thận và gan sưng to"
+        ],
+        "nguyen_nhan": "Nhiễm vi khuẩn Edwardsiella tarda, gây tổn thương nội tạng.",
+        "xu_ly": {
+          "thuoc": "Enrofloxacin",
+          "phuong_phap": "Trộn thuốc vào thức ăn và xử lý nước ao kết hợp.",
+          "lieu_luong": "10 mg thuốc/kg cá/ngày trong 5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh sốc nhiệt",
+        "trieu_chung": [
+          "Cá nổi đầu buổi sáng",
+          "Bơi bất thường",
+          "Chết rải rác"
+        ],
+        "nguyen_nhan": "Do biến động lớn nhiệt độ nước ao giữa ngày và đêm.",
+        "xu_ly": {
+          "thuoc": "Không dùng thuốc",
+          "phuong_phap": "Ổn định nhiệt độ, tăng cường quạt nước tạo oxy hòa tan.",
+          "lieu_luong": "Chạy guồng nước liên tục từ 4h sáng đến 8h sáng"
+        }
+      },
+      {
+        "ten_benh": "Bệnh ký sinh trùng da và mang",
+        "trieu_chung": [
+          "Cá cọ mình vào thành ao",
+          "Mang cá đỏ",
+          "Giảm ăn"
+        ],
+        "nguyen_nhan": "Nhiễm các loài ký sinh như Trichodina, Dactylogyrus bám trên da, mang cá.",
+        "xu_ly": {
+          "thuoc": "Formalin 37%",
+          "phuong_phap": "Tắm toàn bộ cá hoặc ngâm ao.",
+          "lieu_luong": "150–200 ppm ngâm 1–2 giờ, lặp lại sau 2–3 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh viêm ruột do ký sinh trùng",
+        "trieu_chung": [
+          "Bụng trương nhẹ",
+          "Phân sệt hoặc phân trắng",
+          "Cá yếu sức"
+        ],
+        "nguyen_nhan": "Nhiễm ký sinh trùng nội tạng như Eimeria spp.",
+        "xu_ly": {
+          "thuoc": "Metronidazole",
+          "phuong_phap": "Trộn thuốc vào thức ăn.",
+          "lieu_luong": "25 mg/kg cá/ngày trong 5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh lở loét ngoài da",
+        "trieu_chung": [
+          "Vết loét ngoài da",
+          "Da sậm màu",
+          "Cá lờ đờ"
+        ],
+        "nguyen_nhan": "Nhiễm khuẩn Streptococcus spp hoặc Aeromonas spp khi môi trường nước ao bẩn.",
+        "xu_ly": {
+          "thuoc": "Florfenicol",
+          "phuong_phap": "Trộn vào thức ăn hoặc ngâm tắm toàn bộ ao cá.",
+          "lieu_luong": "15 mg thuốc/kg cá/ngày trong 5–7 ngày"
+        }
+      }
+    ]
+  },
+  "ca_chep": {
+    "benh": [
+      {
+        "ten_benh": "Bệnh xuất huyết",
+        "trieu_chung": ["Da cá đỏ, xuất huyết ở bụng và gốc vây", "Hậu môn sưng đỏ", "Cá bỏ ăn"],
+        "nguyen_nhan": "Do vi khuẩn Aeromonas hoặc Pseudomonas trong nước ô nhiễm",
+        "xu_ly": {
+          "thuoc": "Oxytetracycline",
+          "phuong_phap": "Trộn thuốc vào thức ăn",
+          "lieu_luong": "50–75 mg/kg cá/ngày, liên tục 5–7 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh KHV (Herpesvirus)",
+        "trieu_chung": ["Cá chết đột ngột", "Mang cá nhợt nhạt, bong tróc", "Không có phản ứng khi bị quấy động"],
+        "nguyen_nhan": "Do virus Herpesvirus (KHV), thường vào mùa xuân – thu",
+        "xu_ly": {
+          "thuoc": "Không có thuốc đặc trị",
+          "phuong_phap": "Tăng sức đề kháng, bổ sung vitamin",
+          "lieu_luong": "Vitamin C: 1000 mg/kg thức ăn, 7 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh sán lá đơn chủ",
+        "trieu_chung": ["Mang cá đỏ, thở gấp", "Cá nổi đầu vào sáng sớm"],
+        "nguyen_nhan": "Do sán Dactylogyrus và Gyrodactylus bám vào mang",
+        "xu_ly": {
+          "thuoc": "Formalin",
+          "phuong_phap": "Ngâm cá",
+          "lieu_luong": "150–200 ppm trong 1 giờ, lặp lại 2–3 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh nấm thủy mi",
+        "trieu_chung": ["Da có mảng trắng như bông", "Cá bơi chậm, giảm ăn"],
+        "nguyen_nhan": "Do nấm Saprolegnia tấn công vùng da tổn thương",
+        "xu_ly": {
+          "thuoc": "Malachite Green",
+          "phuong_phap": "Tắm cá",
+          "lieu_luong": "0.2 ppm, 1 giờ mỗi ngày, 3–5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh trùng mỏ neo",
+        "trieu_chung": ["Cá cọ mình vào đá, thành bể", "Nổi mụn đỏ ở da"],
+        "nguyen_nhan": "Ký sinh trùng Lernaea (hình móc)",
+        "xu_ly": {
+          "thuoc": "Lufenuron",
+          "phuong_phap": "Cho ăn hoặc tắm cá",
+          "lieu_luong": "0.3 mg/L hoặc 5 mg/kg thức ăn"
+        }
+      },
+      {
+        "ten_benh": "Bệnh đường ruột",
+        "trieu_chung": ["Phân trắng", "Bụng chướng", "Cá ăn ít, bỏ ăn"],
+        "nguyen_nhan": "Vi khuẩn gây rối loạn tiêu hóa",
+        "xu_ly": {
+          "thuoc": "Enrofloxacin",
+          "phuong_phap": "Trộn vào thức ăn",
+          "lieu_luong": "10 mg/kg/ngày trong 5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh do vi khuẩn Flavobacterium",
+        "trieu_chung": ["Vết loét ở da", "Cá tách đàn, ít hoạt động"],
+        "nguyen_nhan": "Vi khuẩn Flavobacterium columnare",
+        "xu_ly": {
+          "thuoc": "Florfenicol",
+          "phuong_phap": "Trộn vào thức ăn",
+          "lieu_luong": "15 mg/kg/ngày trong 5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh bào tử sợi",
+        "trieu_chung": ["Xuất hiện u nhỏ màu trắng dưới da", "Cá yếu, bơi chậm"],
+        "nguyen_nhan": "Myxobolus spp (ký sinh nội tạng)",
+        "xu_ly": {
+          "thuoc": "Không có thuốc đặc trị",
+          "phuong_phap": "Loại bỏ cá bệnh, vệ sinh kỹ ao",
+          "lieu_luong": "Thay nước định kỳ, bổ sung tỏi, vitamin"
+        }
+      },
+      {
+        "ten_benh": "Bệnh ký sinh trùng trùng bánh xe",
+        "trieu_chung": ["Mang cá nhiều nhớt", "Thở gấp, cá quẫy mạnh"],
+        "nguyen_nhan": "Trichodina spp ký sinh ở da và mang",
+        "xu_ly": {
+          "thuoc": "Formalin hoặc KMnO₄",
+          "phuong_phap": "Tắm cá",
+          "lieu_luong": "Formalin 150 ppm hoặc KMnO₄ 2 ppm"
+        }
+      },
+      {
+        "ten_benh": "Bệnh thiếu oxy",
+        "trieu_chung": ["Cá nổi đầu buổi sáng", "Bơi chậm, chết rải rác"],
+        "nguyen_nhan": "Tảo tàn, nhiệt độ cao, mật độ nuôi dày",
+        "xu_ly": {
+          "thuoc": "Không cần thuốc",
+          "phuong_phap": "Chạy sục khí, thay nước",
+          "lieu_luong": "Chạy sục khí từ 2h–6h sáng"
+        }
+      }
+    ]
+  },
+  "ca_tram_co": {
+    "benh": [
+      {
+        "ten_benh": "Viêm ruột do vi khuẩn",
+        "trieu_chung": ["Cá bỏ ăn", "Phân trắng nhớt", "Bụng trướng"],
+        "nguyen_nhan": "Vi khuẩn Aeromonas hydrophila trong nước bẩn, thức ăn kém",
+        "xu_ly": {
+          "thuoc": "Florfenicol",
+          "phuong_phap": "Trộn vào thức ăn cho cá",
+          "lieu_luong": "15 mg/kg cá/ngày trong 5–7 ngày"
+        }
+      },
+      {
+        "ten_benh": "Xuất huyết ngoài da",
+        "trieu_chung": ["Thân có đốm đỏ", "Gốc vây đỏ, hậu môn sưng", "Cá yếu, nằm đáy"],
+        "nguyen_nhan": "Vi khuẩn Streptococcus hoặc Vibrio phát triển trong ao bẩn",
+        "xu_ly": {
+          "thuoc": "Doxycycline",
+          "phuong_phap": "Trộn vào thức ăn, kết hợp xử lý nước",
+          "lieu_luong": "50 mg/kg/ngày trong 5–7 ngày"
+        }
+      },
+      {
+        "ten_benh": "Ký sinh trùng trùng bánh xe",
+        "trieu_chung": ["Mang cá nhiều nhớt", "Cá quẫy, cọ mình", "Giảm ăn"],
+        "nguyen_nhan": "Trichodina spp phát triển khi ao có nhiều chất hữu cơ",
+        "xu_ly": {
+          "thuoc": "Formalin",
+          "phuong_phap": "Tắm cá hoặc xử lý ao",
+          "lieu_luong": "150–200 ppm trong 1 giờ, lặp lại sau 2–3 ngày"
+        }
+      },
+      {
+        "ten_benh": "Sán lá đơn chủ",
+        "trieu_chung": ["Mang sưng đỏ", "Cá thở gấp", "Nổi đầu buổi sáng"],
+        "nguyen_nhan": "Dactylogyrus spp ký sinh trên mang",
+        "xu_ly": {
+          "thuoc": "Praziquantel",
+          "phuong_phap": "Trộn vào thức ăn hoặc tắm cá",
+          "lieu_luong": "5–10 mg/kg thức ăn trong 3–5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Nấm thủy mi (nấm bông)",
+        "trieu_chung": ["Xuất hiện búi trắng như bông trên da", "Da tổn thương", "Cá yếu, bơi chậm"],
+        "nguyen_nhan": "Nấm Saprolegnia tấn công vết thương do đánh bắt hoặc cọ sát",
+        "xu_ly": {
+          "thuoc": "Malachite Green",
+          "phuong_phap": "Tắm cá",
+          "lieu_luong": "0.2 ppm trong 1 giờ, lặp lại mỗi 2–3 ngày"
+        }
+      },
+      {
+        "ten_benh": "Đốm trắng (trùng quả dưa)",
+        "trieu_chung": ["Da xuất hiện hạt trắng như muối", "Cá cọ mình", "Bơi không định hướng"],
+        "nguyen_nhan": "Ichthyophthirius multifiliis phát triển trong nước lạnh hoặc ao ô nhiễm",
+        "xu_ly": {
+          "thuoc": "Formalin",
+          "phuong_phap": "Tắm cá hoặc tạt ao",
+          "lieu_luong": "200 ppm trong 1 giờ, lặp lại sau 2 ngày"
+        }
+      },
+      {
+        "ten_benh": "Thiếu oxy",
+        "trieu_chung": ["Cá nổi đầu hàng loạt vào sáng sớm", "Thở gấp", "Chết rải rác"],
+        "nguyen_nhan": "Ao thiếu oxy do tảo tàn, nhiệt độ cao, mật độ dày",
+        "xu_ly": {
+          "thuoc": "Không dùng thuốc",
+          "phuong_phap": "Chạy guồng nước hoặc sục khí vào ban đêm",
+          "lieu_luong": "Chạy sục khí từ 2h–6h sáng"
+        }
+      },
+      {
+        "ten_benh": "Bệnh đường ruột do ký sinh trùng",
+        "trieu_chung": ["Bụng căng nhẹ", "Phân nhầy, sệt", "Ăn ít, cá yếu"],
+        "nguyen_nhan": "Giun tròn hoặc Eimeria spp ký sinh trong ruột cá",
+        "xu_ly": {
+          "thuoc": "Metronidazole",
+          "phuong_phap": "Trộn thuốc vào thức ăn",
+          "lieu_luong": "25 mg/kg/ngày trong 5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Viêm gan thận mủ",
+        "trieu_chung": ["Gan sưng, bụng to", "Cá lờ đờ, chết nhanh", "Xuất huyết nội tạng"],
+        "nguyen_nhan": "Vi khuẩn Edwardsiella tarda gây hoại tử cơ quan nội tạng",
+        "xu_ly": {
+          "thuoc": "Enrofloxacin",
+          "phuong_phap": "Trộn vào thức ăn",
+          "lieu_luong": "10 mg/kg/ngày trong 5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Loét ngoài da",
+        "trieu_chung": ["Vết loét tròn, đỏ trên thân cá", "Cá nằm đáy", "Bơi chậm, mất cân bằng"],
+        "nguyen_nhan": "Vi khuẩn Aeromonas hoặc Flavobacterium khi nước ao dơ",
+        "xu_ly": {
+          "thuoc": "Florfenicol",
+          "phuong_phap": "Trộn thuốc vào thức ăn",
+          "lieu_luong": "15 mg/kg/ngày trong 5–7 ngày"
+        }
+      }
+    ]
+  },
+  "ca_tram_den": {
+    "benh": [
+      {
+        "ten_benh": "Bệnh xuất huyết toàn thân",
+        "trieu_chung": ["Cá lờ đờ, da có đốm đỏ", "Xuất huyết ở mang, bụng", "Mắt lồi"],
+        "nguyen_nhan": "Vi khuẩn Streptococcus hoặc Aeromonas phát triển khi nước ao bẩn",
+        "xu_ly": {
+          "thuoc": "Oxytetracycline",
+          "phuong_phap": "Trộn vào thức ăn",
+          "lieu_luong": "75 mg/kg/ngày trong 5–7 ngày"
+        }
+      },
+      {
+        "ten_benh": "Viêm gan thận cấp",
+        "trieu_chung": ["Gan sưng, bụng căng", "Xuất huyết nội tạng", "Chết đột ngột"],
+        "nguyen_nhan": "Vi khuẩn Edwardsiella ictaluri gây hoại tử gan thận",
+        "xu_ly": {
+          "thuoc": "Florfenicol",
+          "phuong_phap": "Trộn vào thức ăn, xử lý nước song song",
+          "lieu_luong": "15 mg/kg/ngày trong 7 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh đốm trắng (trùng quả dưa)",
+        "trieu_chung": ["Da, vây có hạt trắng li ti", "Cá quẫy, bơi loạng choạng", "Giảm ăn"],
+        "nguyen_nhan": "Ichthyophthirius multifiliis phát triển mạnh trong nước lạnh, ô nhiễm",
+        "xu_ly": {
+          "thuoc": "Formalin",
+          "phuong_phap": "Tắm cá hoặc tạt đều ao",
+          "lieu_luong": "150–200 ppm trong 1–2 giờ, lặp lại sau 2 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh trùng bánh xe",
+        "trieu_chung": ["Mang cá nhiều nhớt", "Cá nổi đầu sáng sớm", "Cọ thân, bơi yếu"],
+        "nguyen_nhan": "Trichodina spp bám da, mang gây kích ứng",
+        "xu_ly": {
+          "thuoc": "KMnO₄ hoặc Formalin",
+          "phuong_phap": "Ngâm cá",
+          "lieu_luong": "2 ppm KMnO₄ hoặc 150 ppm Formalin, trong 1 giờ"
+        }
+      },
+      {
+        "ten_benh": "Sán lá đơn chủ",
+        "trieu_chung": ["Mang cá đỏ, sưng", "Cá thở gấp", "Giảm ăn, nổi đầu"],
+        "nguyen_nhan": "Dactylogyrus spp ký sinh trong mang",
+        "xu_ly": {
+          "thuoc": "Praziquantel",
+          "phuong_phap": "Trộn vào thức ăn",
+          "lieu_luong": "5–10 mg/kg cá trong 3–5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh viêm ruột",
+        "trieu_chung": ["Bụng phình nhẹ", "Phân trắng nhầy", "Cá ăn kém"],
+        "nguyen_nhan": "Vi khuẩn gây viêm ruột khi môi trường và thức ăn không đảm bảo",
+        "xu_ly": {
+          "thuoc": "Enrofloxacin",
+          "phuong_phap": "Trộn vào thức ăn",
+          "lieu_luong": "10 mg/kg/ngày trong 5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Loét ngoài da",
+        "trieu_chung": ["Thân có vết loét tròn, đỏ", "Cá mất cân bằng, nằm đáy", "Ăn yếu"],
+        "nguyen_nhan": "Do vi khuẩn Aeromonas hoặc Flavobacterium phát triển trong ao bẩn",
+        "xu_ly": {
+          "thuoc": "Florfenicol",
+          "phuong_phap": "Trộn vào thức ăn",
+          "lieu_luong": "15 mg/kg/ngày trong 5–7 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh nấm thủy mi",
+        "trieu_chung": ["Da có mảng trắng như bông", "Bơi chậm, yếu", "Giảm ăn"],
+        "nguyen_nhan": "Nấm Saprolegnia spp tấn công vùng tổn thương",
+        "xu_ly": {
+          "thuoc": "Malachite Green",
+          "phuong_phap": "Tắm cá",
+          "lieu_luong": "0.2 ppm, 1 giờ, lặp lại 3 ngày"
+        }
+      },
+      {
+        "ten_benh": "Thiếu oxy",
+        "trieu_chung": ["Cá nổi đầu sáng sớm", "Cá thở gấp", "Chết rải rác buổi sáng"],
+        "nguyen_nhan": "Tảo tàn, nước ao dơ, mật độ nuôi cao",
+        "xu_ly": {
+          "thuoc": "Không dùng thuốc",
+          "phuong_phap": "Chạy quạt nước ban đêm",
+          "lieu_luong": "Từ 2h–6h sáng, tăng cường oxy"
+        }
+      },
+      {
+        "ten_benh": "Bệnh đường ruột do ký sinh trùng",
+        "trieu_chung": ["Bụng phình nhẹ", "Phân sệt", "Giảm ăn"],
+        "nguyen_nhan": "Nhiễm giun tròn hoặc Eimeria trong ruột cá",
+        "xu_ly": {
+          "thuoc": "Metronidazole",
+          "phuong_phap": "Trộn vào thức ăn",
+          "lieu_luong": "25 mg/kg/ngày trong 5 ngày"
+        }
+      }
+    ]
+  },
+  "ca_me": {
+    "benh": [
+      {
+        "ten_benh": "Bệnh đốm trắng (trùng quả dưa)",
+        "trieu_chung": ["Trên da có đốm trắng li ti như hạt muối", "Cá quẫy mạnh, cọ vào thành ao", "Thở gấp, nổi đầu"],
+        "nguyen_nhan": "Ký sinh trùng Ichthyophthirius phát triển khi nước ao lạnh hoặc ô nhiễm",
+        "xu_ly": {
+          "thuoc": "Formalin",
+          "phuong_phap": "Tắm cá hoặc xử lý cả ao",
+          "lieu_luong": "150–200 ppm trong 1 giờ, lặp lại sau 2 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh viêm ruột",
+        "trieu_chung": ["Phân trắng nhớt", "Bụng phình nhẹ", "Cá bỏ ăn, bơi chậm"],
+        "nguyen_nhan": "Vi khuẩn đường ruột phát triển khi thức ăn kém và môi trường ô nhiễm",
+        "xu_ly": {
+          "thuoc": "Florfenicol",
+          "phuong_phap": "Trộn vào thức ăn cho cá",
+          "lieu_luong": "15 mg/kg/ngày trong 5–7 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh thiếu oxy",
+        "trieu_chung": ["Cá nổi đầu sáng sớm", "Bơi gần máy quạt nước", "Chết rải rác"],
+        "nguyen_nhan": "Ao nhiều bùn đáy, tảo tàn, nhiệt độ cao ban đêm",
+        "xu_ly": {
+          "thuoc": "Không cần thuốc",
+          "phuong_phap": "Chạy quạt nước hoặc sục khí đêm",
+          "lieu_luong": "Từ 2h sáng đến 6h sáng"
+        }
+      },
+      {
+        "ten_benh": "Ký sinh trùng trùng bánh xe",
+        "trieu_chung": ["Mang nhiều nhớt, cá lờ đờ", "Giảm ăn", "Cá cọ mình liên tục"],
+        "nguyen_nhan": "Trichodina spp ký sinh ngoài da và mang cá",
+        "xu_ly": {
+          "thuoc": "KMnO₄ hoặc Formalin",
+          "phuong_phap": "Tắm cá hoặc xử lý nước",
+          "lieu_luong": "2 ppm KMnO₄ hoặc 150 ppm Formalin trong 1 giờ"
+        }
+      },
+      {
+        "ten_benh": "Bệnh nấm thủy mi",
+        "trieu_chung": ["Da có bông trắng như mốc", "Cá bơi yếu, tách đàn", "Giảm ăn"],
+        "nguyen_nhan": "Nấm Saprolegnia phát triển trên vết thương hở",
+        "xu_ly": {
+          "thuoc": "Malachite Green",
+          "phuong_phap": "Tắm cá",
+          "lieu_luong": "0.2 ppm trong 1 giờ, lặp lại 2–3 ngày"
+        }
+      },
+      {
+        "ten_benh": "Viêm mang cá mè",
+        "trieu_chung": ["Mang đỏ, sưng", "Cá thở gấp, nổi đầu", "Bơi chậm, giảm ăn"],
+        "nguyen_nhan": "Vi khuẩn hoặc ký sinh trùng gây tổn thương mang",
+        "xu_ly": {
+          "thuoc": "Formalin + Vitamin C",
+          "phuong_phap": "Ngâm cá, tăng cường miễn dịch",
+          "lieu_luong": "150 ppm Formalin + 1000 mg/kg Vitamin C trong 5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh loét ngoài da",
+        "trieu_chung": ["Vết loét đỏ tròn trên thân", "Cá nằm đáy, yếu sức", "Không phản ứng khi chạm vào"],
+        "nguyen_nhan": "Vi khuẩn Aeromonas spp hoặc môi trường độc hại",
+        "xu_ly": {
+          "thuoc": "Enrofloxacin",
+          "phuong_phap": "Trộn thuốc vào thức ăn",
+          "lieu_luong": "10 mg/kg/ngày trong 5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Bệnh đường ruột do ký sinh trùng",
+        "trieu_chung": ["Phân nhầy, có bọt", "Cá giảm ăn", "Bơi không định hướng"],
+        "nguyen_nhan": "Giun tròn, giun sán, hoặc protozoa ký sinh",
+        "xu_ly": {
+          "thuoc": "Metronidazole",
+          "phuong_phap": "Trộn thuốc vào thức ăn",
+          "lieu_luong": "25 mg/kg/ngày trong 5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Sán lá đơn chủ",
+        "trieu_chung": ["Cá thở gấp, quẫy mạnh", "Mang bị tổn thương", "Da xỉn màu"],
+        "nguyen_nhan": "Dactylogyrus spp ký sinh trong mang gây kích ứng",
+        "xu_ly": {
+          "thuoc": "Praziquantel",
+          "phuong_phap": "Tắm cá hoặc trộn thức ăn",
+          "lieu_luong": "5–10 mg/kg/ngày trong 3–5 ngày"
+        }
+      },
+      {
+        "ten_benh": "Viêm gan thận",
+        "trieu_chung": ["Gan nhợt màu", "Bụng phình, cá chết nhanh", "Xuất huyết ở vây"],
+        "nguyen_nhan": "Vi khuẩn nội sinh gây tổn thương gan thận",
+        "xu_ly": {
+          "thuoc": "Florfenicol",
+          "phuong_phap": "Trộn vào thức ăn, kết hợp thay nước",
+          "lieu_luong": "15 mg/kg/ngày trong 5–7 ngày"
+        }
+      }
+    ]
+  }
+
+
+
+
+}

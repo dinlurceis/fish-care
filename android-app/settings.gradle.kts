@@ -19,6 +19,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = java.net.URI.create("https://jitpack.io") }
+        maven { url = java.net.URI.create("https://maven.google.com") }
     }
 }
 
