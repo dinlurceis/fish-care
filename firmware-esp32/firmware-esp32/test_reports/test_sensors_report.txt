@@ -1,0 +1,4 @@
+Usage: pio test [OPTIONS]
+Try 'pio test -h' for help.
+
+Error: Got unexpected extra argument (test_sensors.cpp)
