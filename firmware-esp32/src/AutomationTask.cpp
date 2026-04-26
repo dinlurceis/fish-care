@@ -1,11 +1,11 @@
 #include "AutomationTask.h"
 #include "NetworkTask.h"
-#include <FirebaseESP32.h>
+#include "TaskDelay.h"
 
 // ============================================================
 //  AUTOMATIONTASK - Điều khiển Motor A (Oxy) + Edge Logic
 //  Chịu trách nhiệm: Duy
-//  Chi tiết: Bật/tắt oxy từ Firebase, tự động bật khi rớt mạng & nhiệt độ quá cao
+//  Chi tiết: Bật/tắt oxy từ Firebase, tự động bật khi rớt mạng & môi trường xấu
 // ============================================================
 
 namespace {
@@ -16,13 +16,18 @@ TaskHandle_t s_TaskHandle = nullptr;
 //  TRẠNG THÁI OXY
 // ─────────────────────────────────────────────────────────
 bool s_OxyRunning = false;
-bool s_EdgeOverrideActive = false;  // Flag: đang chạy edge logic
+bool s_EdgeOverrideActive = false;  // Flag: đang chạy edge logic offline
 unsigned long s_EdgeOverrideStartTime = 0;
-unsigned long s_LastDebugPrintTime = 0;  // ← Timer để giảm spam log
+unsigned long s_LastDebugPrintTime = 0;  // Timer để giảm spam log
 
-// Edge Logic thresholds
+// ─────────────────────────────────────────────────────────
+//  CÁC NGƯỠNG EDGE LOGIC (OFFLINE THRESHOLDS)
+// ─────────────────────────────────────────────────────────
 const float TEMP_THRESHOLD_HIGH = 32.0f;       // °C - Nước quá nóng
-const uint32_t EDGE_AUTO_DURATION_MS = 5UL * 60UL * 1000UL;  // 5 phút (test), có thể thay 15 phút
+const float TDS_THRESHOLD_HIGH = 1000.0f;      // ppm - Nước quá bẩn
+const int TURBIDITY_THRESHOLD_LOW = 1500;      // Nước đục (Giá trị ADC càng thấp càng đục)
+
+const uint32_t EDGE_AUTO_DURATION_MS = 5UL * 60UL * 1000UL;  // 5 phút duy trì (Hysteresis)
 
 // ─────────────────────────────────────────────────────────
 //  ĐIỀU KHIỂN MOTOR A (Oxy)
@@ -70,9 +75,9 @@ void automationTaskLoop(void* unused) {
         //     - Edge Logic: Khi rớt mạng
         // ════════════════════════════════════════
         
-        if (isWiFiConnected) {
+       if (NetworkTask_IsWiFiConnected()) {
             // === CHẾ ĐỘ FIREBASE ===
-            // Nhận lệnh từ NetworkTask (qua xQueue_Commands)
+            // Nhận lệnh từ NetworkTask (qua xQueue_AutoCommands)
             
             CommandData_t cmd;
             memset(&cmd, 0, sizeof(cmd));
@@ -92,44 +97,44 @@ void automationTaskLoop(void* unused) {
                 }
             }
             
-            // Xóa edge override khi có mạng lại
+            // Xóa edge override và khôi phục trạng thái Firebase khi có mạng lại
             if (s_EdgeOverrideActive) {
                 s_EdgeOverrideActive = false;
-                Serial.println("[AutomationTask] WiFi khôi phục - tắt edge override");
+                stopOxy(); // Tắt motor để tránh kẹt trạng thái (State Sync Bug)
+                Serial.println("[AutomationTask] 🌐 WiFi khôi phục - Tắt Edge Override, chờ lệnh từ Firebase");
             }
         } else {
             // === CHẾ ĐỘ EDGE LOGIC (OFFLINE) ===
-            // Khi WiFi mất mà nước xấu → tự động bật oxy
+            // Khi WiFi mất mà nước xấu → tự động bật oxy bảo vệ cá
             
             SensorData_t sensorData = {0};
             
-            // Lấy dữ liệu sensor từ queue
+            // Lấy dữ liệu sensor mới nhất từ queue
             if (xQueuePeek(xQueue_SensorData, &sensorData, 0) == pdPASS) {
                 
-                // Điều kiện kích hoạt edge logic: Nhiệt độ > 32°C
-                bool tempHigh = (sensorData.temperature > TEMP_THRESHOLD_HIGH);
+                // Đánh giá cả 3 điều kiện: Nóng quá, Bẩn quá, Đục quá
+                bool tempHigh   = (sensorData.temperature > TEMP_THRESHOLD_HIGH);
+                bool tdsHigh    = (sensorData.tds > TDS_THRESHOLD_HIGH);
+                bool waterDirty = (sensorData.turbidity < TURBIDITY_THRESHOLD_LOW);
                 
-                if (tempHigh && !s_EdgeOverrideActive) {
+                if ((tempHigh || tdsHigh || waterDirty) && !s_EdgeOverrideActive) {
                     // Kích hoạt edge override
                     startOxy();
                     s_EdgeOverrideActive = true;
                     s_EdgeOverrideStartTime = millis();
                     
-                    Serial.printf("[AutomationTask] ⚠️  EDGE LOGIC: WiFi mất + Temp=%.1f°C > ngưỡng → Bật oxy 5 phút\n",
-                                  sensorData.temperature);
-
-                    // Ghi nhận trạng thái "Auto" để báo về App khi có mạng lại
-                    // (Lưu vào biến local, sẽ đẩy lên Firebase ở nhánh isWiFiConnected bên trên)
+                    Serial.printf("[AutomationTask] ⚠️ EDGE LOGIC: Mất mạng + Môi trường xấu (Nhiệt:%.1f, TDS:%.1f, Đục:%d) → Bật oxy 5 phút\n",
+                                  sensorData.temperature, sensorData.tds, sensorData.turbidity);
                 }
                 
-                // Kiểm timeout: Tắt oxy sau 5 phút
+                // Kiểm timeout: Tắt oxy sau 5 phút (Chống cháy motor)
                 if (s_EdgeOverrideActive && 
                     (millis() - s_EdgeOverrideStartTime > EDGE_AUTO_DURATION_MS)) {
                     
                     stopOxy();
                     s_EdgeOverrideActive = false;
                     
-                    Serial.println("[AutomationTask] ⏱️  Edge override timeout - Tắt oxy");
+                    Serial.println("[AutomationTask] ⏱️ Edge override timeout - Tắt oxy");
                 }
             }
         }
@@ -137,14 +142,15 @@ void automationTaskLoop(void* unused) {
         // ───── Debug Serial (Mỗi 5 giây) ─────
         if (millis() - s_LastDebugPrintTime > 5000) {
             Serial.printf("[AutomationTask] WiFi=%s | Oxy=%s | EdgeOverride=%s\n",
-                          isWiFiConnected ? "ON" : "OFF",
+                          NetworkTask_IsWiFiConnected() ? "ON" : "OFF",
                           s_OxyRunning ? "ON" : "OFF",
                           s_EdgeOverrideActive ? "ACTIVE" : "INACTIVE");
             s_LastDebugPrintTime = millis();
         }
         
-        // ───── Delay ─────
-        vTaskDelay(pdMS_TO_TICKS(AUTOMATION_CHECK_INTERVAL_MS));  // ← Dùng config (50ms thay vì 10s)
+        // ───── Delay nhường CPU ─────
+        // (Sử dụng config từ AutomationTask.h, thường là 50ms)
+        vTaskDelay(pdMS_TO_TICKS(AUTOMATION_CHECK_INTERVAL_MS));  
     }
 }
 
@@ -162,9 +168,9 @@ void AutomationTask_init(UBaseType_t priority, uint16_t stackSize) {
         "AutomationTask",         // Tên task
         stackSize,                // Stack size
         nullptr,                  // Parameter
-        priority,                 // Priority (1 = Low)
+        priority,                 // Priority (từ main.cpp)
         &s_TaskHandle,            // Handle output
-        1                         // Core 1 (tự do)
+        1                         // Core 1 (Quy hoạch Single-Core)
     );
     
     if (xReturned == pdPASS) {
