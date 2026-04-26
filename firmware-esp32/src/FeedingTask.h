@@ -11,14 +11,14 @@
 
 /**
  * @brief Khởi tạo FeedingTask
- * @param priority: FreeRTOS priority (3 = High)
+ * @param priority: FreeRTOS priority (4 = HIGHEST)
  * @param stackSize: Task stack size (bytes), mặc định 4096
  * 
  * Gọi xTaskCreatePinnedToCore internally
  * Cấu hình GPIO chân Motor B: EN(23), IN1(14), IN2(12)
  * Cấu hình GPIO LoadCell HX711: DOUT(21), SCK(22)
  */
-void FeedingTask_init(UBaseType_t priority = 3, uint16_t stackSize = 4096);
+void FeedingTask_init(UBaseType_t priority = 4, uint16_t stackSize = 4096);
 
 /**
  * @brief Bắt đầu cho ăn theo gram

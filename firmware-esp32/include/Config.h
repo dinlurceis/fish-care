@@ -26,13 +26,13 @@ constexpr int PIN_OXY_IN2 = 27;
 constexpr uint8_t SENSOR_QUEUE_LENGTH = 12;
 constexpr uint8_t COMMAND_QUEUE_LENGTH = 12;
 constexpr uint16_t SENSOR_SAMPLE_INTERVAL_MS = 2000;
-constexpr uint16_t AUTOMATION_CHECK_INTERVAL_MS = 50;    // ← Giảm từ 100 → 50ms (tắt nhanh hơn)
+constexpr uint16_t AUTOMATION_CHECK_INTERVAL_MS = 100;    // Check every 100ms (was 50ms)
 
 // Retry and watchdog behavior.
 constexpr uint32_t WIFI_RETRY_BASE_MS = 2000;
 constexpr uint32_t WIFI_RETRY_MAX_MS = 30000;
 constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 10000;
-constexpr uint8_t NETWORK_WDT_TIMEOUT_SEC = 60;
+constexpr uint8_t NETWORK_WDT_TIMEOUT_SEC = 20;  // Reduced from 60s for faster detection
 constexpr uint8_t OFFLINE_CACHE_CAPACITY = 32;
 
 // ============================================================

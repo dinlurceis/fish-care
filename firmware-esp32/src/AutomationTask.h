@@ -11,13 +11,13 @@
 
 /**
  * @brief Khởi tạo AutomationTask
- * @param priority: FreeRTOS priority (1 = Low)
- * @param stackSize: Task stack size (bytes), mặc định 3072
+ * @param priority: FreeRTOS priority (2 = MEDIUM)
+ * @param stackSize: Task stack size (bytes), mặc định 4096
  * 
  * Gọi xTaskCreatePinnedToCore internally
  * Cấu hình GPIO chân Motor A: ENA(5), IN1(26), IN2(27)
  */
-void AutomationTask_init(UBaseType_t priority = 1, uint16_t stackSize = 3072);
+void AutomationTask_init(UBaseType_t priority = 2, uint16_t stackSize = 4096);
 
 /**
  * @brief Bật/tắt guồng Oxy từ Firebase

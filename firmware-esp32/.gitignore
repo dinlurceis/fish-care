@@ -14,7 +14,7 @@
 
 # Logs
 *.log
-*.run_tests.bat
+
 # Credentials & Secrets (NEVER PUSH TO GITHUB)
 include/secrets.h
 secrets.h

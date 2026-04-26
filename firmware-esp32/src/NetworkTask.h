@@ -16,13 +16,13 @@ extern FirebaseAuth fbAuth;
 
 /**
  * @brief Khởi tạo NetworkTask
- * @param priority: FreeRTOS priority (4 = Highest)
+ * @param priority: FreeRTOS priority (3 = HIGH)
  * @param stackSize: Task stack size (bytes), mặc định 8192
  * 
  * Gọi xTaskCreatePinnedToCore internally
  * Phải subscribe vào Watchdog timeout
  */
-void NetworkTask_init(UBaseType_t priority = 4, uint16_t stackSize = 8192);
+void NetworkTask_init(UBaseType_t priority = 3, uint16_t stackSize = 8192);
 
 /**
  * @brief Check trạng thái kết nối WiFi

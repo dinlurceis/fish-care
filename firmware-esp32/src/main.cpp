@@ -8,6 +8,7 @@
 // ── Include các module của team ───────────────────────────────
 #include "Config.h"
 #include "./sensors/SensorTypes.h"
+#include "TaskDelay.h"
 #include "SensorTask.h"
 #include "AutomationTask.h"
 #include "FeedingTask.h"
@@ -48,7 +49,7 @@ void configureWatchdog() {
 // ============================================================
 void setup() {
     Serial.begin(115200);
-    delay(500);
+    Task_Delay(500);
     
     Serial.println("\n========================================");
     Serial.println("  🐟 Fish-Care IoT System - Boot 🐟");
@@ -63,10 +64,12 @@ void setup() {
     
     // SensorData Queue: size=1 để luôn giữ data mới nhất
     xQueue_SensorData = xQueueCreate(1, sizeof(SensorData_t));
+
     if (!xQueue_SensorData) {
-        Serial.println("[FATAL] Failed to create xQueue_SensorData!");
-        while (true) { delay(1000); }
-    }
+    Serial.println("[FATAL] Failed to create xQueue_SensorData! Rebooting...");
+    Task_Delay(2000);
+    ESP.restart(); // Lệnh reset an toàn của ESP32
+}
     Serial.println("  ✓ xQueue_SensorData created");
 
     // Commands Queues: Mỗi consumer một queue riêng để tránh tranh giành lệnh
@@ -75,7 +78,7 @@ void setup() {
     
     if (!xQueue_FeedCommands || !xQueue_AutoCommands) {
         Serial.println("[FATAL] Failed to create Command Queues!");
-        while (true) { delay(1000); }
+        while (true) { Task_Delay(1000); }
     }
     Serial.println("  ✓ Command Queues (Feed + Auto) created");
 
@@ -83,36 +86,36 @@ void setup() {
     xMutex_Firebase = xSemaphoreCreateMutex();
     if (!xMutex_Firebase) {
         Serial.println("[FATAL] Failed to create xMutex_Firebase!");
-        while (true) { delay(1000); }
+        while (true) { Task_Delay(1000); }
     }
     Serial.println("  ✓ xMutex_Firebase created");
 
     // ── 3. Khởi động FreeRTOS Tasks với Priority Levels ─────
-    Serial.println("\n[BOOT] Starting FreeRTOS tasks...");
+    Serial.println("\n[BOOT] Starting FreeRTOS tasks on Core 1...");
     
-    // Priority: 4 = uxHigherPriority, chạy trước các task khác
-    // Stack size: 4096 bytes (16KB = 4 * 1024 bytes per task)
-    // Core affinity: pinToCore(0 hoặc 1)
+    // Tất cả tasks chạy trên Core 1 để quản lý dễ hơn
+    // Tham số cuối cùng "1" = Core 1
+    // Tham số thứ 5 = Priority (4 = Cao nhất, 1 = Thấp nhất)
     
-    // Priority 4 - NetworkTask (Hoàng): HIGHEST
+    // Priority 4 - FeedingTask (Dũng): HIGHEST
+    // Phải cao nhất vì LoadCell interrupt cần phản ứng ngay
+    FeedingTask_init(4, 4096);  // Dũng - Core 1, Priority 4
+    Serial.println("  ✓ FeedingTask (Dũng) - Core 1, Priority 4 (HIGHEST)");
+    
+    // Priority 3 - NetworkTask (Hoàng): HIGH
     // Phải cao vì phải ping Firebase liên tục không đứt
-    NetworkTask_init();  // Hoàng - Core 0, Priority 4
-    Serial.println("  ✓ NetworkTask (Hoàng) - Priority 4");
+    NetworkTask_init(3, 8192);  // Hoàng - Core 1, Priority 3
+    Serial.println("  ✓ NetworkTask (Hoàng) - Core 1, Priority 3 (HIGH)");
     
-    // Priority 3 - FeedingTask (Dũng): HIGH
-    // Phải cao vì LoadCell interrupt cần nhanh
-    FeedingTask_init();  // Dũng - Core 0, Priority 3
-    Serial.println("  ✓ FeedingTask (Dũng) - Priority 3");
+    // Priority 2 - AutomationTask (Duy): MEDIUM
+    // Check offline logic và motor automation
+    AutomationTask_init(2, 4096);  // Duy - Core 1, Priority 2
+    Serial.println("  ✓ AutomationTask (Duy) - Core 1, Priority 2 (MEDIUM)");
     
-    // Priority 2 - SensorTask (Hằng): MEDIUM
-    // Đọc cảm biến 1-2s một lần, không urgency cao
-    SensorTask_init();   // Hằng - Core 1, Priority 2
-    Serial.println("  ✓ SensorTask (Hằng) - Priority 2");
-    
-    // Priority 1 - AutomationTask (Duy): LOW
-    // Check offline logic 10s một lần, lowest priority
-    AutomationTask_init(); // Duy - Core 1, Priority 1
-    Serial.println("  ✓ AutomationTask (Duy) - Priority 1");
+    // Priority 1 - SensorTask (Hằng): LOW
+    // Đọc cảm biến định kỳ, priority thấp nhất
+    SensorTask_init(1, 4096);  // Hằng - Core 1, Priority 1 (LOWEST)
+    Serial.println("  ✓ SensorTask (Hằng) - Core 1, Priority 1 (LOWEST)");
 
     // ── 4. Cấu hình GPIO cho các module ─────────────────
     Serial.println("\n[BOOT] Configuring GPIO pins...");
