@@ -1,4 +1,5 @@
 #include "FeedingTask.h"
+#include "TaskDelay.h"
 #include "NetworkTask.h"  // For Firebase access
 #include <HX711.h>
 #include <time.h>
@@ -40,16 +41,13 @@ HX711 s_LoadCell;
 const float LOADCELL_SCALE_FACTOR = 505.4633;
 
 float readWeightFromLoadCell() {
-    if (!s_LoadCell.is_ready()) {
-        return 0.0f;  // Fallback nếu sensor không sẵn sàng
+    static float lastValidWeight = 0.0f; // Biến static giữ giá trị qua các vòng lặp
+    
+    if (s_LoadCell.is_ready()) {
+        lastValidWeight = s_LoadCell.get_units(1);
     }
-    
-    // Đọc cân một lần trực tiếp, bỏ lọc trung vị
-    float weight = s_LoadCell.get_units(1);
-    
-    // Đã bỏ bộ lọc ngắt ngưỡng < 2g để nhạy bén tối đa (có thể đo áp lực tay đè nhẹ)
-    
-    return weight;
+    // Nếu chưa ready, trả về số cân cũ, tránh việc cân bị rớt về 0 đột ngột
+    return lastValidWeight; 
 }
 
 // ─────────────────────────────────────────────────────────
@@ -94,7 +92,7 @@ void feedingTaskLoop(void* unused) {
     // LoadCell HX711: DOUT(21), SCK(22)
     s_LoadCell.begin(PIN_FEED_DOUT, PIN_FEED_SCK);
     s_LoadCell.set_scale(LOADCELL_SCALE_FACTOR);
-    delay(1500);
+    Task_Delay(1500);
     s_LoadCell.tare();  // Zero calibration
     
     Serial.println("[FeedingTask] ✓ Motor B + LoadCell sẵn sàng");
@@ -314,14 +312,15 @@ void feedingTaskLoop(void* unused) {
 void FeedingTask_init(UBaseType_t priority, uint16_t stackSize) {
     Serial.println("[FeedingTask_init] Tạo FreeRTOS task...");
     
+    // Tất cả tasks chạy trên Core 1 để quản lý dễ hơn
     BaseType_t xReturned = xTaskCreatePinnedToCore(
         feedingTaskLoop,          // Hàm task
         "FeedingTask",            // Tên task
         stackSize,                // Stack size
         nullptr,                  // Parameter
-        priority,                 // Priority (3 = High)
+        priority,                 // Priority (từ main.cpp)
         &s_TaskHandle,            // Handle output
-        0                         // Core 0 (share với NetworkTask)
+        1                         // Core 1
     );
     
     if (xReturned == pdPASS) {

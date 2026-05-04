@@ -12,12 +12,12 @@
 
 /**
  * @brief Khởi tạo SensorTask
- * @param priority: FreeRTOS priority (2 = Medium)
+ * @param priority: FreeRTOS priority (1 = LOWEST)
  * @param stackSize: Task stack size (bytes), mặc định 4096
  * 
  * Gọi xTaskCreatePinnedToCore internally để tạo task
  */
-void SensorTask_init(UBaseType_t priority = 2, uint16_t stackSize = 4096);
+void SensorTask_init(UBaseType_t priority = 1, uint16_t stackSize = 4096);
 
 /**
  * @brief Lấy dữ liệu cảm biến mới nhất đang lưu trong queue
