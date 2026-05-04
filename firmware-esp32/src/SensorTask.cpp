@@ -54,7 +54,7 @@ void sensorTaskLoop(void* unused) {
     s_tdsSensor.begin();       // TDS ADC (GPIO 34)
     s_turbiditySensor.begin(); // Turbidity ADC (GPIO 32)
     
-    Serial.println(\"[SensorTask] Cảm biến sẵn sàng. Bắt đầu vòng lặp đọc...\");
+    Serial.println("[SensorTask] Sensor initialized. Starting read loop...");
     
     // ───── Vòng lặp đọc cảm biến ─────
     for (;;) {

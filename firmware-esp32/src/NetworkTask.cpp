@@ -41,13 +41,15 @@ void connectWiFiManager() {
     // Giao diện tối
     wm.setClass("invert");
 
+
     // Timeout (nếu không cấu hình thì thoát)
     wm.setConfigPortalTimeout(180);
 
     Serial.println("[NetworkTask] Đang mở WiFi cấu hình: FishCare_AP");
 
-    // LUÔN mở AP (không check WiFi cũ)
+    // LUÔN mở AP
     bool res = wm.startConfigPortal("FishCare_AP", "12345678");
+
 
     if (!res) {
         Serial.println("[NetworkTask] Không cấu hình WiFi -> OFFLINE");
@@ -60,7 +62,7 @@ void connectWiFiManager() {
         IPAddress dns2(8, 8, 4, 4);
         WiFi.config(WiFi.localIP(), WiFi.gatewayIP(), WiFi.subnetMask(), dns1, dns2);
 
-        Serial.printf(\"\\n[NetworkTask] Đã kết nối WiFi: %s\\n\", WiFi.SSID().c_str());
+        Serial.printf("\n[NetworkTask] Đã kết nối WiFi: %s\n", WiFi.SSID().c_str());
         Serial.printf("[NetworkTask] IP: %s\n", WiFi.localIP().toString().c_str());
     }
 }
@@ -187,7 +189,7 @@ void initFirebase() {
     Firebase.reconnectNetwork(true);
     
     s_FirebaseReady = true;
-    Serial.println(\"[NetworkTask] Firebase init xong!\");
+    Serial.println("[NetworkTask] Firebase init xong!");
 }
 void startFirebaseStream() {
     if (!s_FirebaseReady || !Firebase.ready() || s_FirebaseStreamStarted) return;
@@ -202,7 +204,7 @@ void startFirebaseStream() {
     
     Firebase.setStreamCallback(streamData, firebaseCallback, streamTimeoutCallback);
     s_FirebaseStreamStarted = true;
-    Serial.println(\"[Firebase Stream] Đã cắm ống Stream - Sẵn sàng nhận lệnh!\");
+    Serial.println("[Firebase Stream] Đã cắm ống Stream - Sẵn sàng nhận lệnh!");
 }
 
 //  4. HÀM ĐẨY DỮ LIỆU CẢM BIẾN (Chạy định kỳ)
@@ -230,8 +232,9 @@ void syncSensorDataToFirebase(const SensorData_t& data) {
         if (millis() - s_lastChartSync > 60000 || s_lastChartSync == 0) {
             time_t now = time(nullptr);
             if (now > 24 * 3600) { 
-                long long tsMs = (long long)now * 1000LL;
-                String path = "/tds_logs/" + String(tsMs);
+                unsigned long tsMs = (unsigned long)now * 1000UL;
+                char path[50];
+                sprintf(path, "/tds_logs/%lu", tsMs);
                 Firebase.setFloat(fbData, path, data.tds);
                 s_lastChartSync = millis();
             }
@@ -267,15 +270,15 @@ void networkTaskLoop(void* unused) {
                 wifiLostTime = millis();
             }
             
-            // Nếu đứt mạng quá 15 phút không tự nối lại được -> Reset mạch cho sạch RAM
+            // Neu dut mang qua 15 phut khong tu noi lai duoc -> Reset mach cho sach RAM
             if (millis() - wifiLostTime > 900000) { 
-                Serial.println(\"[NetworkTask] Mất mạng quá lâu -> Khởi động lại hệ thống!\");
+                Serial.println("[NetworkTask] Network lost too long -> System restart!");
                 ESP.restart();
             }
         } else {
-            // Mới có mạng trở lại
+            // Moi co mang tro lai
             if (!s_WiFiConnected) {
-                Serial.println(\"[NetworkTask] Đã có WiFi trở lại!\");
+                Serial.println("[NetworkTask] WiFi connected again!");
                 s_WiFiConnected = true;
                 if (!s_FirebaseReady) initFirebase();
             }
@@ -312,8 +315,8 @@ void NetworkTask_init(UBaseType_t priority, uint16_t stackSize) {
     BaseType_t xReturned = xTaskCreatePinnedToCore(
         networkTaskLoop, "NetworkTask", stackSize, nullptr, priority, &s_TaskHandle, 1);
         
-    if (xReturned == pdPASS) Serial.println(\"[NetworkTask_init] Task tạo thành công\");
-    else Serial.println("[NetworkTask_init] ✗ Lỗi tạo task!");
+    if (xReturned == pdPASS) Serial.println("[NetworkTask_init] Task created");
+    else Serial.println("[NetworkTask_init] Task creation error!");
 }
 
 bool NetworkTask_IsWiFiConnected() { return s_WiFiConnected; }

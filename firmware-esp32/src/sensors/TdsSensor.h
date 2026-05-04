@@ -2,14 +2,14 @@
 
 #include <Arduino.h>
 
-// ============================================================
+
 //  CẢM BIẾN TDS (Total Dissolved Solids)
 //  Giao tiếp: Analog ADC
 //  Chân:      GPIO 34 (ADC1_CH6 - input only, theo PROJECT_CONTEXT.md)
 
 //  Công thức: V = adc * 3.3 / 4096.0
 //             TDS = (133.42*V³ - 255.86*V² + 857.39*V) * 0.75
-// ============================================================
+
 
 #define TDS_PIN         34      // GPIO 34 (ADC1_CH6)
 #define TDS_VREF        3.3f    // Điện áp tham chiếu ESP32 (V)

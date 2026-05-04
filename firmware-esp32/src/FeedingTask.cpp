@@ -53,7 +53,7 @@ void startMotor() {
     digitalWrite(PIN_FEED_IN2, LOW);
     s_MotorRunning = true;
     s_MotorStartTime = millis();
-    Serial.println(\"[FeedingTask] Motor cho ăn BẬT\");
+    Serial.println("[FeedingTask] Motor cho ăn BẬT");
 }
 
 void stopMotor() {
@@ -63,14 +63,14 @@ void stopMotor() {
     digitalWrite(PIN_FEED_IN2, LOW);
     s_MotorRunning = false;
     s_MotorStartTime = 0;  // ← Reset startTime để track chính xác lần tắt tiếp theo
-    Serial.println(\"[FeedingTask] Motor cho ăn TẮT\");
+    Serial.println("[FeedingTask] Motor cho ăn TẮT");
 }
 
 
 
 // ─────────────────────────────────────────────────────────
 //  TASK LOOP CHÍNH
-// ─────────────────────────────────────────────────────────
+
 void feedingTaskLoop(void* unused) {
     // ───── Khởi tạo Hardware ─────
     Serial.println("[FeedingTask] Khởi tạo Motor B + LoadCell...");
@@ -87,7 +87,7 @@ void feedingTaskLoop(void* unused) {
     Task_Delay(1500);
     s_LoadCell.tare();  // Zero calibration
     
-    Serial.println(\"[FeedingTask] Motor B + LoadCell sẵn sàng\");
+    Serial.println("[FeedingTask] Motor B + LoadCell sẵn sàng");
     
     // ───── Vòng lặp chính ─────
     for (;;) {
@@ -316,9 +316,9 @@ void feedingTaskLoop(void* unused) {
 
 }  // namespace
 
-// ============================================================
+
 //  HÀM PUBLIC
-// ============================================================
+
 
 void FeedingTask_init(UBaseType_t priority, uint16_t stackSize) {
     Serial.println("[FeedingTask_init] Tạo FreeRTOS task...");
@@ -335,9 +335,9 @@ void FeedingTask_init(UBaseType_t priority, uint16_t stackSize) {
     );
     
     if (xReturned == pdPASS) {
-        Serial.println(\"[FeedingTask_init] Task tạo thành công\");
+        Serial.println("[FeedingTask_init] Task tạo thành công");
     } else {
-        Serial.println(\"[FeedingTask_init] Lỗi tạo task!\");
+        Serial.println("[FeedingTask_init] Lỗi tạo task!");
     }
 }
 

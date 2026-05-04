@@ -4,7 +4,7 @@
 void Task_Delay(uint32_t delayMs) {
     // Validate delay không quá lâu (để WDT không timeout)
     if (delayMs > 15000) {
-        Serial.printf("[⚠️ Task_Delay] ⚠️ Delay %lums quá lâu! WDT timeout ở 20s\n", delayMs);
+        Serial.printf("[Task_Delay]  Delay %lums quá lâu! WDT timeout ở 20s\n", delayMs);
     }
     
     // Dùng vTaskDelay thay vì delay()
@@ -15,14 +15,14 @@ void Task_Delay(uint32_t delayMs) {
 bool Task_ValidateDelay(uint32_t delayMs, uint32_t wdtTimeoutMs) {
     // Check nếu delay vượt quá WDT timeout
     if (delayMs >= wdtTimeoutMs) {
-        Serial.printf("[⚠️ Task_Delay] DANGER: Delay %lums >= WDT timeout %lums!\n", 
+        Serial.printf("[Task_Delay] DANGER: Delay %lums >= WDT timeout %lums!\n", 
                       delayMs, wdtTimeoutMs);
         return false;
     }
     
     // Check nếu delay quá gần timeout (80% rule)
     if (delayMs > (wdtTimeoutMs * 80 / 100)) {
-        Serial.printf("[⚠️ Task_Delay] WARNING: Delay %lums gần WDT timeout %lums (80%% rule)\n", 
+        Serial.printf("[Task_Delay] WARNING: Delay %lums gần WDT timeout %lums (80%% rule)\n", 
                       delayMs, wdtTimeoutMs);
         return true;  // Still safe but warn
     }

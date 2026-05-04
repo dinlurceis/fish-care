@@ -2,30 +2,28 @@
 #include "NetworkTask.h"
 #include "TaskDelay.h"
 
-// AUTOMATIONTASK - Điều khiển Motor A (Oxy) + Edge Logic
-// Bật/tắt oxy từ Firebase, tự động bật khi rớt mạng & môi trường xấu
+//  AUTOMATIONTASK - Điều khiển Motor A (Oxy) + Edge Logic
+//  Chi tiết: Bật/tắt oxy từ Firebase, tự động bật khi rớt mạng & môi trường xấu
 
 namespace {
 
 TaskHandle_t s_TaskHandle = nullptr;
 
-// TRẠNG THÁI OXY
+//  TRẠNG THÁI OXY
 bool s_OxyRunning = false;
 bool s_EdgeOverrideActive = false;  // Flag: đang chạy edge logic offline
 unsigned long s_EdgeOverrideStartTime = 0;
 unsigned long s_LastDebugPrintTime = 0;  // Timer để giảm spam log
 
-// CÁC NGƯỠNG EDGE LOGIC (OFFLINE THRESHOLDS)
-const float TEMP_THRESHOLD_HIGH = 34.0f;       // °C - Nước quá nóng (nguy hiểm)
-const float TEMP_THRESHOLD_LOW = 15.0f;        // °C - Nước quá lạnh (stress cá)
-const float TDS_THRESHOLD_HIGH = 600.0f;       // ppm - Nước quá bẩn (nguy hiểm)
-const int TURBIDITY_THRESHOLD_LOW = 1500;      // TS300B ADC: < 1500 = nước hơi đục, < 1000 = nước rất đục
+//  CÁC NGƯỠNG EDGE LOGIC (OFFLINE THRESHOLDS)
+const float TEMP_THRESHOLD_HIGH = 32.0f;       // °C - Nước quá nóng
+const float TEMP_THRESHOLD_LOW = 10.0f;        // °C - Nước quá lạnh
+const float TDS_THRESHOLD_HIGH = 1000.0f;      // ppm - Nước quá bẩn
+const int TURBIDITY_THRESHOLD_LOW = 1500;      // Nước đục (Giá trị ADC càng thấp càng đục)
 
 const uint32_t EDGE_AUTO_DURATION_MS = 5UL * 60UL * 1000UL;  // 5 phút duy trì (Hysteresis)
 
-//
 //  ĐIỀU KHIỂN MOTOR A (Oxy)
-//
 
 void startOxy() {
     // Bật motor: ENA=HIGH, IN1=HIGH, IN2=LOW
@@ -33,7 +31,7 @@ void startOxy() {
     digitalWrite(PIN_OXY_IN1, HIGH);
     digitalWrite(PIN_OXY_IN2, LOW);
     s_OxyRunning = true;
-    Serial.println(\"[AutomationTask] Guồng Oxy BẬT\");
+    Serial.println("[AutomationTask] Oxy ON");
 }
 
 void stopOxy() {
@@ -42,7 +40,7 @@ void stopOxy() {
     digitalWrite(PIN_OXY_IN1, LOW);
     digitalWrite(PIN_OXY_IN2, LOW);
     s_OxyRunning = false;
-    Serial.println(\"[AutomationTask] Guồng Oxy TẮT\");
+    Serial.println("[AutomationTask] Oxy OFF");
 }
 
 //  TASK LOOP CHÍNH
@@ -54,9 +52,9 @@ void automationTaskLoop(void* unused) {
     pinMode(PIN_OXY_EN, OUTPUT);
     pinMode(PIN_OXY_IN1, OUTPUT);
     pinMode(PIN_OXY_IN2, OUTPUT);
-    stopOxy();  // Tắt ban đầu
+    stopOxy();  // Tat ban dau
     
-    Serial.println(\"[AutomationTask] Motor A sẵn sàng\");
+    Serial.println("[AutomationTask] Motor A ready");
     
     // Vòng lặp chính
     for (;;) {
@@ -64,7 +62,6 @@ void automationTaskLoop(void* unused) {
         //  1. LỰA CHỌN NGUỒN ĐIỀU KHIỂN
         //     - Firebase: Khi có mạng
         //     - Edge Logic: Khi rớt mạng
-        // 
         
        if (NetworkTask_IsWiFiConnected()) {
            
@@ -141,7 +138,7 @@ void automationTaskLoop(void* unused) {
         }
         
         // Delay nhường CPU
-        // (Sử dụng config từ AutomationTask.h, thường là 50ms)
+        // (Sử dụng config từ AutomationTask.h)
         vTaskDelay(pdMS_TO_TICKS(AUTOMATION_CHECK_INTERVAL_MS));  
     }
 }
@@ -164,9 +161,9 @@ void AutomationTask_init(UBaseType_t priority, uint16_t stackSize) {
     );
     
     if (xReturned == pdPASS) {
-        Serial.println(\"[AutomationTask_init] Task tạo thành công\");
+        Serial.println("[AutomationTask_init] Task created");
     } else {
-        Serial.println(\"[AutomationTask_init] Lỗi tạo task!\");
+        Serial.println("[AutomationTask_init] Task creation error!");
     }
 }
 

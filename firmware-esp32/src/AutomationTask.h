@@ -3,10 +3,11 @@
 #include "Config.h"
 #include "sensors/SensorTypes.h"
 
-// ============================================================
+// 
 //  AUTOMATIONTASK - Điều khiển Motor A (Oxy) + Edge Logic
+
 //  Chi tiết: Bật/tắt guồng Oxy, phát hiện edge case (rớt mạng)
-// ============================================================
+// 
 
 /**
  * @brief Khởi tạo AutomationTask
@@ -17,6 +18,14 @@
  * Cấu hình GPIO chân Motor A: ENA(5), IN1(26), IN2(27)
  */
 void AutomationTask_init(UBaseType_t priority = 2, uint16_t stackSize = 4096);
+
+/**
+ * @brief Bật/tắt guồng Oxy từ Firebase
+ * @param on: true = bật, false = tắt
+ * 
+ * Được gọi từ NetworkTask khi nhận command từ Firebase
+ */
+void AutomationTask_SetOxy(bool on);
 
 /**
  * @brief Lấy trạng thái Oxy hiện tại

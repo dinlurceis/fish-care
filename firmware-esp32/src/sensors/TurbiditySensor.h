@@ -2,20 +2,21 @@
 
 #include <Arduino.h>
 
-// ============================================================
+
 //  CẢM BIẾN ĐỘ ĐỤC NƯỚC TS-300B
 //  Giao tiếp: Analog ADC
-//  Chân:      GPIO 32
+//  Chân:      GPIO 32 (ADC1_CH4, theo PROJECT_CONTEXT.md)
 //  
 //  GHI CHÚ THIẾT KẾ:
 //  - Tín hiệu TỶ LỆ NGHỊCH với độ đục
 //    (ADC cao = nước trong, ADC thấp = nước đục)
 //  - Output: Giá trị int 0-4095 (Firebase schema: "ts300b")
-// ============================================================
+
 
 #define TURBIDITY_PIN               32
 
 // Ngưỡng cảnh báo: nếu ADC < này = nước đục nguy hiểm
+// (Dùng bởi AutomationTask để trigger edge automation)
 #define TURBIDITY_ALERT_THRESHOLD   1500
 
 class TurbiditySensor {

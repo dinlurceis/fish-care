@@ -29,7 +29,7 @@ int TurbiditySensor::readTurbidity() {
 }
 
 bool TurbiditySensor::isAlertLevel() const {
-    // ⚠️  TODO: Hiện tại không lưu state → hàm này chưa dùng được
+    //  TODO: Hiện tại không lưu state → hàm này chưa dùng được
     // Cách 1: Lưu _lastValue trong readTurbidity()
     // Cách 2: Hoặc gọi readTurbidity() rồi check ngay trong AutomationTask
     // Tạm thời trả về false (sẽ implement sau)
