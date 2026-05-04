@@ -135,7 +135,8 @@ class GroqAiRepo @Inject constructor() {
 
     /**
      * Format dataList thành chuỗi text dạng bảng
-     * Định dạng: "Ngày dd/MM: TDS=xxx, Nhiệt=xx.x°C, Độục=x.x, pH=x.x"
+     * Định dạng: "Ngày dd/MM: TDS=xxx, Nhiệt=xx.x°C, Độục=xxxx, pH=x.x"
+     * Độục dùng đơn vị ADC raw (0-4095), ADC thấp = nước đục, ADC cao = nước trong
      */
     private fun formatWaterDataAsTable(dataList: List<SensorData>): String {
         if (dataList.isEmpty()) {
@@ -147,7 +148,7 @@ class GroqAiRepo @Inject constructor() {
 
         dataList.forEach { data ->
             val dateStr = dateFormat.format(Date(data.timestamp))
-            val line = "Ngày $dateStr: TDS=${data.tds.toInt()}, Nhiệt=${String.format("%.1f", data.temperature)}°C, Độục=${String.format("%.1f", data.turbidity)}, pH=${String.format("%.1f", data.ph)}"
+            val line = "Ngày $dateStr: TDS=${data.tds.toInt()}, Nhiệt=${String.format("%.1f", data.temperature)}°C, Độục=${data.turbidity.toInt()}, pH=${String.format("%.1f", data.ph)}"
             stringBuilder.append(line).append("\n")
         }
 
@@ -163,7 +164,7 @@ $formattedData
 
 Hãy:
 (1) Nhận xét xu hướng từng chỉ số.
-(2) Cảnh báo nếu có chỉ số vượt ngưỡng (TDS>400, nhiệt>33°C, độ đục>8, pH<6.5 hoặc >8).
+(2) Cảnh báo nếu có chỉ số vượt ngưỡng (TDS>400, nhiệt>33°C, độ đục<1500, pH<6.5 hoặc >8).
 (3) Đề xuất hành động cụ thể.
 
 Trả lời tiếng Việt, dưới 200 từ, dùng bullet points."""

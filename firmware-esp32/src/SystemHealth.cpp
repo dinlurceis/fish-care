@@ -10,7 +10,10 @@
 extern QueueHandle_t xQueue_SensorData;
 extern volatile bool isWiFiConnected;
 
+
+
 //  Đảm bảo FreeRTOS system không crash, memory đầy, watchdog cảnh báo
+
 
 static uint8_t g_wdt_timeout_sec = 20;
 
@@ -72,17 +75,17 @@ SystemHealth_t SystemHealth_GetStatus() {
 void SystemHealth_PrintStatus() {
     SystemHealth_t health = SystemHealth_GetStatus();
     
-    Serial.println("\n╔════════════════════════════════════╗");
-    Serial.println("║       SYSTEM HEALTH MONITOR        ║");
-    Serial.println("╠════════════════════════════════════╣");
+
+    Serial.println("      SYSTEM HEALTH MONITOR        ║");
+
     
     Serial.printf("║ Uptime (ms):     %lu\n", health.uptime_ms);
     Serial.printf("║ Free Heap (B):   %u\n", health.free_heap_bytes);
-    Serial.printf("║ WiFi Connected:  %s\n", health.wifi_connected ? "YES ✓" : "NO ✗");
+    Serial.printf("║ WiFi Connected:  %s\n", health.wifi_connected ? "YES" : "NO");
     
     // In ra cảnh báo nếu RAM tụt quá thấp (< 20KB)
     if (health.free_heap_bytes < 20480) {
-        Serial.println("║ ⚠️ WARNING: LOW MEMORY DETECTED!   ║");
+        Serial.println("║ WARNING: LOW MEMORY DETECTED!   ║");
     }
     
     if (health.temp_celsius > 0) {
@@ -93,11 +96,10 @@ void SystemHealth_PrintStatus() {
         Serial.printf("║ TDS:             %.1f ppm\n", health.tds_ppm);
     }
     
-    Serial.println("╚════════════════════════════════════╝\n");
 }
 
 void SystemHealth_SoftReset(const char* reason) {
-    Serial.println("\n[SystemHealth] SOFT RESET INITIATED");
+    Serial.println("\n[SystemHealth]   SOFT RESET INITIATED");
     Serial.print("[SystemHealth] Reason: ");
     Serial.println(reason);
     Serial.println("[SystemHealth] Shutting down tasks...");

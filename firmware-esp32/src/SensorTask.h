@@ -3,8 +3,12 @@
 #include "Config.h"
 #include "sensors/SensorTypes.h"
 
+// ============================================================
 //  SENSORTASK - Đọc cảm biến & đẩy vào Queue
+//  Chịu trách nhiệm: Hằng
 //  Chi tiết: Đọc DS18B20 (OneWire), TDS (ADC), Turbidity (ADC)
+//            Dữ liệu đã mượt vì SensorTask chỉ gọi mỗi 2 giây
+// ============================================================
 
 /**
  * @brief Khởi tạo SensorTask

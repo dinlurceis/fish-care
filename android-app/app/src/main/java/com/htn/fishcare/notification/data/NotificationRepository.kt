@@ -1,10 +1,7 @@
 package com.htn.fishcare.notification.data
 
 import android.util.Log
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.*
 import com.htn.fishcare.notification.model.AppNotification
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -20,7 +17,6 @@ class NotificationRepository @Inject constructor() {
 
     private val TAG = "NotifRepo"
 
-    /** Đọc toàn bộ /notifications, sort mới nhất lên đầu */
     fun observeNotifications(): Flow<List<AppNotification>> = callbackFlow {
         val ref = FirebaseDatabase.getInstance().getReference("notifications")
 
@@ -44,7 +40,9 @@ class NotificationRepository @Inject constructor() {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "observeNotifications cancelled: ${error.message}")
-                close(error.toException())
+
+                // ❌ KHÔNG crash nữa
+                trySend(emptyList())
             }
         }
 
@@ -52,9 +50,9 @@ class NotificationRepository @Inject constructor() {
         awaitClose { ref.removeEventListener(listener) }
     }
 
-    /** Đếm số thông báo chưa đọc */
     fun observeUnreadCount(): Flow<Int> = callbackFlow {
         val ref = FirebaseDatabase.getInstance().getReference("notifications")
+
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val count = snapshot.children.count {
@@ -62,41 +60,51 @@ class NotificationRepository @Inject constructor() {
                 }
                 trySend(count)
             }
-            override fun onCancelled(error: DatabaseError) { close(error.toException()) }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "observeUnreadCount error: ${error.message}")
+
+                // ❌ KHÔNG crash
+                trySend(0)
+            }
         }
+
         ref.addValueEventListener(listener)
         awaitClose { ref.removeEventListener(listener) }
     }
 
-    /** Đánh dấu 1 thông báo đã đọc */
     suspend fun markAsRead(id: String) {
         val ref = FirebaseDatabase.getInstance()
             .getReference("notifications/$id/read")
+
         suspendCancellableCoroutine<Unit> { cont ->
             ref.setValue(true)
                 .addOnSuccessListener { if (cont.isActive) cont.resume(Unit) }
-                .addOnFailureListener { if (cont.isActive) cont.resumeWithException(it) }
+                .addOnFailureListener {
+                    Log.e(TAG, "markAsRead error: ${it.message}")
+                    if (cont.isActive) cont.resume(Unit) // ❌ không crash
+                }
         }
     }
 
-    /** Đánh dấu tất cả đã đọc */
     suspend fun markAllAsRead(ids: List<String>) {
         val db = FirebaseDatabase.getInstance()
         val updates = ids.associate { "notifications/$it/read" to true }
+
         suspendCancellableCoroutine<Unit> { cont ->
             db.reference.updateChildren(updates)
                 .addOnSuccessListener { if (cont.isActive) cont.resume(Unit) }
-                .addOnFailureListener { if (cont.isActive) cont.resumeWithException(it) }
+                .addOnFailureListener {
+                    Log.e(TAG, "markAllAsRead error: ${it.message}")
+                    if (cont.isActive) cont.resume(Unit)
+                }
         }
     }
 
-    /**
-     * Ghi 1 notification vào Firebase (dùng khi App tự phát hiện ngưỡng sensor).
-     * Thông thường ESP32 hoặc Cloud Function sẽ ghi, nhưng App cũng có thể ghi.
-     */
     fun pushNotification(type: String, title: String, message: String) {
         val ref = FirebaseDatabase.getInstance().getReference("notifications")
         val id  = ref.push().key ?: return
+
         ref.child(id).setValue(
             mapOf(
                 "type"      to type,
@@ -105,7 +113,10 @@ class NotificationRepository @Inject constructor() {
                 "timestamp" to System.currentTimeMillis(),
                 "read"      to false
             )
-        )
+        ).addOnFailureListener {
+            Log.e(TAG, "pushNotification error: ${it.message}")
+        }
+
         Log.d(TAG, "Pushed notification [$type]: $title")
     }
 }

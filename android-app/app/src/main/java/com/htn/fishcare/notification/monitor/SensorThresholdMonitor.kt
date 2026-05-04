@@ -22,11 +22,13 @@ import javax.inject.Singleton
  *  - /notifications  khi có chỉ số vượt ngưỡng
  *  - /tds_logs       mỗi khi sensor cập nhật
  *
- * Ngưỡng (theo PROJECT_CONTEXT.md):
- *  TDS:         > 400 ppm  → cảnh báo cao
- *  Nhiệt độ:   > 33°C     → cảnh báo quá nóng
- *              < 20°C     → cảnh báo quá lạnh
- *  Độ đục:     > 8 NTU    → cảnh báo đục
+ * Ngưỡng cảnh báo cho ao cá nông nghiệp:
+ *  Nhiệt độ:   < 15°C       → cảnh báo thấp (cá stress, ăn kém)
+ *              > 34°C       → nguy hiểm cao (cần bật guồng oxy)
+ *  TDS:        400-600 ppm  → cảnh báo (nước bắt đầu bẩn)
+ *              > 600 ppm    → nguy hiểm (nước quá bẩn, xử lý ngay)
+ *  Độ đục TS300B ADC: < 1000 → nguy hiểm (nước quá đục, cá khó thở)
+ *              < 1500       → cảnh báo (nước hơi đục)
  */
 @Singleton
 class SensorThresholdMonitor @Inject constructor(
@@ -57,44 +59,70 @@ class SensorThresholdMonitor @Inject constructor(
     }
 
     private fun checkThresholds(temp: Float, tds: Float, turbidity: Float) {
-        // TDS cao
-        if (tds > 400f) {
-            pushAlertIfDebounced(
-                key     = "tds_high",
-                type    = "water_quality",
-                title   = "⚠️ Chất lượng nước không tốt",
-                message = "TDS ở mức ${tds.toInt()} ppm (ngưỡng an toàn ≤ 400 ppm). Cần thay nước hoặc kiểm tra bộ lọc."
-            )
+        // ════════════════════════════════════════
+        // KIỂM TRA NHIỆT ĐỘ
+        // ════════════════════════════════════════
+        when {
+            temp > 34f -> {
+                pushAlertIfDebounced(
+                    key     = "temp_critical",
+                    type    = "temperature",
+                    title   = "NGUY HIỂM: Nhiệt độ ao cao",
+                    message = "Nhiệt độ hiện tại ${String.format("%.1f", temp)}°C (ngưỡng nguy hiểm > 34°C). Hãy bật guồng ngay để làm mát! Cá sẽ bị chết nếu không xử lý."
+                )
+            }
+            temp < 15f -> {
+                pushAlertIfDebounced(
+                    key     = "temp_low",
+                    type    = "temperature",
+                    title   = "Nhiệt độ ao thấp",
+                    message = "Nhiệt độ hiện tại ${String.format("%.1f", temp)}°C (ngưỡng cảnh báo < 15°C). Cá bị stress, ăn kém."
+                )
+            }
         }
 
-        // Nhiệt độ quá cao
-        if (temp > 33f) {
-            pushAlertIfDebounced(
-                key     = "temp_high",
-                type    = "temperature",
-                title   = "🌡️ Nhiệt độ nước quá cao",
-                message = "Nhiệt độ hiện tại ${String.format("%.1f", temp)}°C (ngưỡng an toàn ≤ 33°C). Kiểm tra hệ thống làm mát."
-            )
+        // ════════════════════════════════════════
+        // KIỂM TRA CHẤT LƯỢNG NƯỚC (TDS)
+        // ════════════════════════════════════════
+        when {
+            tds > 600f -> {
+                pushAlertIfDebounced(
+                    key     = "tds_critical",
+                    type    = "water_quality",
+                    title   = "NGUY HIỂM: Nước quá bẩn",
+                    message = "TDS ở mức ${tds.toInt()} ppm (ngưỡng nguy hiểm > 600 ppm). Phải xử lý ngay! Thay nước hoặc vệ sinh bộ lọc khẩn cấp."
+                )
+            }
+            tds > 400f -> {
+                pushAlertIfDebounced(
+                    key     = "tds_warning",
+                    type    = "water_quality",
+                    title   = "Chất lượng nước bắt đầu bẩn",
+                    message = "TDS ở mức ${tds.toInt()} ppm (ngưỡng cảnh báo 400-600 ppm). Nước bắt đầu bẩn, cần xử lý sớm."
+                )
+            }
         }
 
-        // Nhiệt độ quá thấp
-        if (temp < 20f) {
-            pushAlertIfDebounced(
-                key     = "temp_low",
-                type    = "temperature",
-                title   = "🌡️ Nhiệt độ nước quá thấp",
-                message = "Nhiệt độ hiện tại ${String.format("%.1f", temp)}°C (ngưỡng an toàn ≥ 20°C). Cá có thể bị stress."
-            )
-        }
-
-        // Độ đục cao
-        if (turbidity > 8f) {
-            pushAlertIfDebounced(
-                key     = "turb_high",
-                type    = "water_quality",
-                title   = "🌫️ Độ đục nước quá cao",
-                message = "Độ đục ở mức ${String.format("%.1f", turbidity)} NTU (ngưỡng an toàn ≤ 8). Cần vệ sinh bộ lọc."
-            )
+        // ════════════════════════════════════════
+        // KIỂM TRA ĐỘ ĐỤC (TS300B - ADC raw: 0-4095, thấp = đục)
+        // ════════════════════════════════════════
+        when {
+            turbidity < 1000f -> {
+                pushAlertIfDebounced(
+                    key     = "turb_critical",
+                    type    = "water_quality",
+                    title   = "NGUY HIỂM: Nước quá đục",
+                    message = "Độ đục ADC = ${String.format("%.0f", turbidity)} (range 0-4095, ngưỡng nguy hiểm < 1000). ⚡ CÁ KHÓ THỞ! Nước quá đục → cá khó nhìn thức ăn + cạn oxy. Cần vệ sinh ao cá và bật oxy ngay."
+                )
+            }
+            turbidity < 1500f -> {
+                pushAlertIfDebounced(
+                    key     = "turb_warning",
+                    type    = "water_quality",
+                    title   = "Nước hơi đục",
+                    message = "Độ đục ADC = ${String.format("%.0f", turbidity)} (range 0-4095, ngưỡng cảnh báo < 1500). Nước hơi đục → cá khó nhìn thức ăn. Cần vệ sinh ao cá sớm."
+                )
+            }
         }
     }
 
@@ -115,7 +143,7 @@ class SensorThresholdMonitor @Inject constructor(
     /** Ghi snapshot cảm biến vào /tds_logs để có lịch sử cảnh báo */
     private fun writeTdsLog(temp: Float, tds: Float, turbidity: Float) {
         // Chỉ ghi khi có ít nhất 1 chỉ số vượt ngưỡng
-        val hasAlert = tds > 400f || temp > 33f || temp < 20f || turbidity > 8f
+        val hasAlert = tds > 400f || temp > 34f || temp < 15f || turbidity < 1500f
         if (!hasAlert) return
 
         val db  = FirebaseDatabase.getInstance()
@@ -139,10 +167,25 @@ class SensorThresholdMonitor @Inject constructor(
 
     private fun buildAlertTag(temp: Float, tds: Float, turb: Float): String {
         val tags = mutableListOf<String>()
-        if (tds > 400f)   tags.add("tds_high")
-        if (temp > 33f)   tags.add("temp_high")
-        if (temp < 20f)   tags.add("temp_low")
-        if (turb > 8f)    tags.add("turbidity_high")
+        
+        // Nhiệt độ
+        when {
+            temp > 34f -> tags.add("temp_critical")
+            temp < 15f -> tags.add("temp_low")
+        }
+        
+        // Chất lượng nước
+        when {
+            tds > 600f -> tags.add("tds_critical")
+            tds > 400f -> tags.add("tds_warning")
+        }
+        
+        // Độ đục (TS300B ADC: thấp = đục)
+        when {
+            turb < 1000f -> tags.add("turb_critical")
+            turb < 1500f -> tags.add("turb_warning")
+        }
+        
         return tags.joinToString(",")
     }
 }

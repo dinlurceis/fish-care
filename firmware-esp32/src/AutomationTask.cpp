@@ -2,34 +2,36 @@
 #include "NetworkTask.h"
 #include "TaskDelay.h"
 
+// ============================================================
 //  AUTOMATIONTASK - Điều khiển Motor A (Oxy) + Edge Logic
 //  Chịu trách nhiệm: Duy
 //  Chi tiết: Bật/tắt oxy từ Firebase, tự động bật khi rớt mạng & môi trường xấu
+// ============================================================
 
 namespace {
 
 TaskHandle_t s_TaskHandle = nullptr;
 
-//────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 //  TRẠNG THÁI OXY
-//────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 bool s_OxyRunning = false;
 bool s_EdgeOverrideActive = false;  // Flag: đang chạy edge logic offline
 unsigned long s_EdgeOverrideStartTime = 0;
 unsigned long s_LastDebugPrintTime = 0;  // Timer để giảm spam log
 
-//────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 //  CÁC NGƯỠNG EDGE LOGIC (OFFLINE THRESHOLDS)
-//────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 const float TEMP_THRESHOLD_HIGH = 32.0f;       // °C - Nước quá nóng
 const float TDS_THRESHOLD_HIGH = 1000.0f;      // ppm - Nước quá bẩn
 const int TURBIDITY_THRESHOLD_LOW = 1500;      // Nước đục (Giá trị ADC càng thấp càng đục)
 
 const uint32_t EDGE_AUTO_DURATION_MS = 5UL * 60UL * 1000UL;  // 5 phút duy trì (Hysteresis)
 
-//────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 //  ĐIỀU KHIỂN MOTOR A (Oxy)
-//────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 
 void startOxy() {
     // Bật motor: ENA=HIGH, IN1=HIGH, IN2=LOW
@@ -49,11 +51,11 @@ void stopOxy() {
     Serial.println("[AutomationTask] ✓ Guồng Oxy TẮT");
 }
 
-//────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 //  TASK LOOP CHÍNH
-//────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 void automationTaskLoop(void* unused) {
-    // Khởi tạo Hardware
+    // ───── Khởi tạo Hardware ─────
     Serial.println("[AutomationTask] Khởi tạo Motor A (Oxy)...");
     
     // Motor A control pins: ENA(5), IN1(26), IN2(27)
@@ -64,7 +66,7 @@ void automationTaskLoop(void* unused) {
     
     Serial.println("[AutomationTask] ✓ Motor A sẵn sàng");
     
-    // Vòng lặp chính
+    // ───── Vòng lặp chính ─────
     for (;;) {
         
         // ════════════════════════════════════════
@@ -137,7 +139,7 @@ void automationTaskLoop(void* unused) {
             }
         }
         
-        // Debug Serial (Mỗi 5 giây)
+        // ───── Debug Serial (Mỗi 5 giây) ─────
         if (millis() - s_LastDebugPrintTime > 5000) {
             Serial.printf("[AutomationTask] WiFi=%s | Oxy=%s | EdgeOverride=%s\n",
                           NetworkTask_IsWiFiConnected() ? "ON" : "OFF",
@@ -146,15 +148,17 @@ void automationTaskLoop(void* unused) {
             s_LastDebugPrintTime = millis();
         }
         
-        // Delay nhường CPU
+        // ───── Delay nhường CPU ─────
         // (Sử dụng config từ AutomationTask.h, thường là 50ms)
         vTaskDelay(pdMS_TO_TICKS(AUTOMATION_CHECK_INTERVAL_MS));  
     }
 }
 
-} 
+}  // namespace
 
+// ============================================================
 //  HÀM PUBLIC
+// ============================================================
 
 void AutomationTask_init(UBaseType_t priority, uint16_t stackSize) {
     Serial.println("[AutomationTask_init] Tạo FreeRTOS task...");
