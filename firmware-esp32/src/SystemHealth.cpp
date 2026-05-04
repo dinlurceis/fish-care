@@ -10,10 +10,7 @@
 extern QueueHandle_t xQueue_SensorData;
 extern volatile bool isWiFiConnected;
 
-// ============================================================
-//  SYSTEMHEALTH - Implementation by Công (Leader)
 //  Đảm bảo FreeRTOS system không crash, memory đầy, watchdog cảnh báo
-// ============================================================
 
 static uint8_t g_wdt_timeout_sec = 20;
 
@@ -100,7 +97,7 @@ void SystemHealth_PrintStatus() {
 }
 
 void SystemHealth_SoftReset(const char* reason) {
-    Serial.println("\n[SystemHealth] ⚠️  SOFT RESET INITIATED");
+    Serial.println("\n[SystemHealth] SOFT RESET INITIATED");
     Serial.print("[SystemHealth] Reason: ");
     Serial.println(reason);
     Serial.println("[SystemHealth] Shutting down tasks...");

@@ -3,11 +3,9 @@
 #include "Config.h"
 #include "sensors/SensorTypes.h"
 
-// ============================================================
 //  AUTOMATIONTASK - Điều khiển Motor A (Oxy) + Edge Logic
 //  Chịu trách nhiệm: Duy
 //  Chi tiết: Bật/tắt guồng Oxy, phát hiện edge case (rớt mạng)
-// ============================================================
 
 /**
  * @brief Khởi tạo AutomationTask

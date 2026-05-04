@@ -6,10 +6,9 @@
 #include <freertos/FreeRTOS.h>
 #include <esp_task_wdt.h>
 
-// ============================================================
+
 //  SYSTEM HEALTH MONITORING & WATCHDOG UTILITIES
-//  Công (Leader) - Đảm bảo hệ thống không treo/memory leak
-// ============================================================
+
 
 typedef struct {
     uint32_t uptime_ms;           // Thời gian chạy (ms)
@@ -21,9 +20,9 @@ typedef struct {
     uint16_t tds_ppm;             // TDS sensor
 } SystemHealth_t;
 
-// ============================================================
+
 //  FUNCTION DECLARATIONS
-// ============================================================
+
 
 /**
  * @brief Cấu hình watchdog timer
@@ -56,7 +55,6 @@ void SystemHealth_ResetWatchdog();
  * @brief Lấy thông tin system health hiện tại
  * @return SystemHealth_t struct chứa stats
  * 
- * Công có thể dùng để monitor và debug
  */
 SystemHealth_t SystemHealth_GetStatus();
 

@@ -2,7 +2,7 @@
 #include <algorithm>
 
 void TdsSensor::begin() {
-    // ── Cấu hình chân ADC ──
+    // Cấu hình chân ADC
     // GPIO 34 là input-only trên ESP32, không cần pinMode
     // Đặt attenuation để đo full range 0-3.3V
     analogSetPinAttenuation(TDS_PIN, ADC_11db);
@@ -10,13 +10,13 @@ void TdsSensor::begin() {
 }
 
 float TdsSensor::readTds() {
-    // ── Đọc trực tiếp ──
+    // Đọc trực tiếp
     int rawAdc = analogRead(TDS_PIN);
 
-    // ── Hiệu chuẩn: Chuyển ADC → Điện áp ──
+    // Hiệu chuẩn: Chuyển ADC → Điện áp
     float voltage = rawAdc * TDS_VREF / TDS_ADC_RES;
 
-    // ── Tính TDS ppm ──
+    // Tính TDS ppm
     float tds = _voltageToPpm(voltage);
 
     // Bảo vệ: TDS không thể âm
@@ -25,7 +25,7 @@ float TdsSensor::readTds() {
     return tds;
 }
 
-// ─── Private ─────────────────────────────────────────────────
+// Private
 
 float TdsSensor::_voltageToPpm(float voltage) {
     // TDS = (133.42*V³ - 255.86*V² + 857.39*V) * 0.75

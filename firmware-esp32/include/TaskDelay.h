@@ -5,12 +5,10 @@
 #include <freertos/task.h>
 
 /**
- * ============================================================
  *  TASKDELAY - FreeRTOS-Safe Delay Utility
  *  
  *  Mục đích: Thay thế delay() (blocking) trong FreeRTOS tasks
  *  Đảm bảo: Non-blocking, scheduler-aware, watchdog-safe
- * ============================================================
  */
 
 /**

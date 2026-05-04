@@ -3,11 +3,9 @@
 #include "Config.h"
 #include "sensors/SensorTypes.h"
 
-// ============================================================
 //  FEEDINGTASK - Điều khiển động cơ cho ăn & LoadCell
 //  Chịu trách nhiệm: Dũng
 //  Chi tiết: FreeRTOS xTask, Timeout 30s, LoadCell HX711
-// ============================================================
 
 /**
  * @brief Khởi tạo FeedingTask

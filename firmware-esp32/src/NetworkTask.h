@@ -3,13 +3,10 @@
 #include "Config.h"
 #include <FirebaseESP32.h>
 
-// ============================================================
 //  NETWORKTASK - WiFi, Firebase, Command polling, Watchdog
-//  Chịu trách nhiệm: Hoàng
 //  Chi tiết: WiFi retry, Firebase sync, Offline cache, WDT
-// ============================================================
 
-// ── Firebase objects (global, chia sẻ với FeedingTask) ──
+// Firebase objects (global, chia sẻ với FeedingTask)
 extern FirebaseData fbData;
 extern FirebaseConfig fbConfig;
 extern FirebaseAuth fbAuth;

@@ -4,19 +4,17 @@
 #include <HX711.h>
 #include <time.h>
 
-// ============================================================
 //  FEEDINGTASK - Điều khiển Motor B (cho ăn) + LoadCell
 //  Chịu trách nhiệm: Dũng
 //  Chi tiết: 3 chế độ (Auto, Gram, Manual), Timeout 30s bảo vệ motor
-// ============================================================
 
 namespace {
 
 TaskHandle_t s_TaskHandle = nullptr;
 
-// ─────────────────────────────────────────────────────────
+//────────────────────────────────────────────────────
 //  TRẠNG THÁI FEEDING - Theo dõi quá trình cho ăn
-// ─────────────────────────────────────────────────────────
+//────────────────────────────────────────────────────
 
 // Chế độ feeding hiện tại
 enum FeedMode_e { FEED_IDLE = 0, FEED_AUTO = 1, FEED_GRAM = 2, FEED_MANUAL = 3 };
@@ -34,9 +32,9 @@ float s_GramStartWeight = 0.0f;
 float s_AutoStartWeight = 0.0f;
 unsigned long s_AutoStartTime = 0;
 
-// ─────────────────────────────────────────────────────────
+//────────────────────────────────────────────────────
 //  LOADCELL HX711 - Cân nặng cám
-// ─────────────────────────────────────────────────────────
+//────────────────────────────────────────────────────
 HX711 s_LoadCell;
 const float LOADCELL_SCALE_FACTOR = 505.4633;
 
@@ -50,9 +48,9 @@ float readWeightFromLoadCell() {
     return lastValidWeight; 
 }
 
-// ─────────────────────────────────────────────────────────
+//────────────────────────────────────────────────────
 //  ĐIỀU KHIỂN MOTOR B (Cho ăn)
-// ─────────────────────────────────────────────────────────
+//────────────────────────────────────────────────────
 
 void startMotor() {
     // Bật motor: ENB=HIGH, IN3=HIGH, IN4=LOW (quay tự do)
@@ -76,11 +74,11 @@ void stopMotor() {
 
 
 
-// ─────────────────────────────────────────────────────────
+//────────────────────────────────────────────────────
 //  TASK LOOP CHÍNH
-// ─────────────────────────────────────────────────────────
+//────────────────────────────────────────────────────
 void feedingTaskLoop(void* unused) {
-    // ───── Khởi tạo Hardware ─────
+    // Khởi tạo Hardware
     Serial.println("[FeedingTask] Khởi tạo Motor B + LoadCell...");
     
     // Motor B control pins: ENB(23), IN3(14), IN4(12)
@@ -97,7 +95,7 @@ void feedingTaskLoop(void* unused) {
     
     Serial.println("[FeedingTask] ✓ Motor B + LoadCell sẵn sàng");
     
-    // ───── Vòng lặp chính ─────
+    // Vòng lặp chính
     for (;;) {
         
         // ════════════════════════════════════════
@@ -289,7 +287,7 @@ void feedingTaskLoop(void* unused) {
             }
         }
         
-        // ───── Cập nhật Weight Vào Queue (để NetworkTask sync lên Firebase) ─────
+        // Cập nhật Weight Vào Queue (để NetworkTask sync lên Firebase)
         // Nếu weight âm → set thành 0 (tránh âm lên Firebase)
         SensorData_t sensorData = {0};
         if (xQueuePeek(xQueue_SensorData, &sensorData, 0) == pdPASS) {
@@ -298,16 +296,14 @@ void feedingTaskLoop(void* unused) {
             xQueueOverwrite(xQueue_SensorData, &sensorData);
         }
         
-        // ───── Delay ─────
+        // Delay
         vTaskDelay(pdMS_TO_TICKS(20));  // Check mỗi 20ms (nhanh hơn 100ms)
     }
 }
 
 }  // namespace
 
-// ============================================================
 //  HÀM PUBLIC
-// ============================================================
 
 void FeedingTask_init(UBaseType_t priority, uint16_t stackSize) {
     Serial.println("[FeedingTask_init] Tạo FreeRTOS task...");

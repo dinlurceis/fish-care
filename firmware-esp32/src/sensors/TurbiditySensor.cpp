@@ -2,7 +2,7 @@
 #include <algorithm>
 
 void TurbiditySensor::begin() {
-    // ── Cấu hình chân ADC ──
+    // Cấu hình chân ADC
     // Đặt attenuation để đo full range 0-3.3V
     analogSetPinAttenuation(TURBIDITY_PIN, ADC_11db);
     Serial.printf("[Turbidity] TS-300B init on GPIO %d\n", TURBIDITY_PIN);
@@ -11,7 +11,7 @@ void TurbiditySensor::begin() {
 }
 
 int TurbiditySensor::readTurbidity() {
-    // ── Lọc trung vị (Median Filter) với 15 mẫu (phần 2.5.1) ──
+    // Lọc trung vị (Median Filter) với 15 mẫu (phần 2.5.1)
     int samples[15];
     for(int i = 0; i < 15; i++) {
         samples[i] = analogRead(TURBIDITY_PIN);
@@ -28,10 +28,3 @@ int TurbiditySensor::readTurbidity() {
     return turbidityRaw;
 }
 
-bool TurbiditySensor::isAlertLevel() const {
-    // ⚠️  TODO: Hiện tại không lưu state → hàm này chưa dùng được
-    // Cách 1: Lưu _lastValue trong readTurbidity()
-    // Cách 2: Hoặc gọi readTurbidity() rồi check ngay trong AutomationTask
-    // Tạm thời trả về false (sẽ implement sau)
-    return false;
-}

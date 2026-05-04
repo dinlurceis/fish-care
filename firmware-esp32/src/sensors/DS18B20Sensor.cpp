@@ -18,11 +18,11 @@ void DS18B20Sensor::begin() {
 }
 
 float DS18B20Sensor::readTemperature() {
-    // ── Đọc 1 lần temperature (blocking ~750ms ở 12-bit) ──
+    // Đọc 1 lần temperature (blocking ~750ms ở 12-bit)
     _sensors.requestTemperatures();
     float raw = _sensors.getTempCByIndex(0);
 
-    // ── Xử lý lỗi ──
+    // Xử lý lỗi
     if (raw == DS18B20_ERROR_VAL || raw == DEVICE_DISCONNECTED_C) {
         Serial.println("[DS18B20] ERROR: sensor disconnected or CRC fail");
         _valid = false;

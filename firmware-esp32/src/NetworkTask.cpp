@@ -7,15 +7,10 @@
 #include <time.h>
 #include "secrets.h"          // Chỉ chứa FIREBASE_HOST và FIREBASE_API_KEY / SECRET
 
-// ============================================================
 //  NETWORKTASK - WiFiManager, Firebase Stream, Task Communication
-//  Chịu trách nhiệm: Hoàng
 //  Kiến trúc: Event-Driven (Firebase Stream) + JSON Batch Push
-// ============================================================
 
-// ─────────────────────────────────────────────────────────
 //  FIREBASE SDK - GLOBAL
-// ─────────────────────────────────────────────────────────
 FirebaseData fbData;        // Dùng riêng để đẩy dữ liệu lên (Upload)
 FirebaseData streamData;    // Dùng RIÊNG để hứng dữ liệu đẩy xuống (Stream) - CHỐNG CRASH
 FirebaseConfig fbConfig;
@@ -26,9 +21,7 @@ extern QueueHandle_t xQueue_AutoCommands;
 extern QueueHandle_t xQueue_FeedCommands;
 extern QueueHandle_t xQueue_SensorData;
 
-// ─────────────────────────────────────────────────────────
 //  TRẠNG THÁI KẾT NỐI
-// ─────────────────────────────────────────────────────────
 bool s_WiFiConnected = false;
 bool s_FirebaseReady = false;
 bool s_FirebaseStreamStarted = false;
@@ -36,9 +29,7 @@ TaskHandle_t s_TaskHandle = nullptr;
 
 namespace {
 
-// ─────────────────────────────────────────────────────────
 //  1. HÀM KẾT NỐI WIFI TỰ ĐỘNG (WIFIMANAGER)
-// ─────────────────────────────────────────────────────────
 void connectWiFiManager() {
     Serial.println("[NetworkTask] Bắt đầu khởi động WiFiManager...");
     
@@ -71,9 +62,7 @@ void connectWiFiManager() {
     }
 }
 
-// ─────────────────────────────────────────────────────────
 //  2. CALLBACK: HỨNG SỰ KIỆN TỪ FIREBASE STREAM
-// ─────────────────────────────────────────────────────────
 void firebaseCallback(StreamData data) {
    if (data.eventType() == "put" || data.eventType() == "patch") {
         String path = data.dataPath();
@@ -83,7 +72,7 @@ void firebaseCallback(StreamData data) {
         
         Serial.printf("[Firebase_Stream] Lệnh mới tới! Path: %s\n", path.c_str());
 
-        // ── Lệnh Guồng Oxy ──
+        // Lệnh Guồng Oxy
         if (path.indexOf("guong") != -1) {
             bool oxyState = data.boolData();
             CommandData_t cmd = {
@@ -95,7 +84,7 @@ void firebaseCallback(StreamData data) {
             Serial.printf("[Stream] CMD_GUONG: %s\n", oxyState ? "ON" : "OFF");
         }
         
-        // ── Lệnh Thức ăn ──
+        // Lệnh Thức ăn
         else if (path.indexOf("mode") != -1) {
             String mode = data.stringData();
             CommandData_t cmd = {.timestamp = millis()};
@@ -134,9 +123,7 @@ void streamTimeoutCallback(bool timeout) {
     }
 }
 
-// ─────────────────────────────────────────────────────────
 //  3. KHỞI TẠO FIREBASE (Chuẩn Auth Email/Password)
-// ─────────────────────────────────────────────────────────
 void initFirebase() {
     Serial.println("[NetworkTask] Khởi tạo Firebase...");
     
@@ -176,16 +163,14 @@ void startFirebaseStream() {
     Serial.println("[Firebase Stream] ✓ Đã cắm ống Stream - Sẵn sàng nhận lệnh!");
 }
 
-// ─────────────────────────────────────────────────────────
 //  4. HÀM ĐẨY DỮ LIỆU CẢM BIẾN (Chạy định kỳ)
-// ─────────────────────────────────────────────────────────
 void syncSensorDataToFirebase(const SensorData_t& data) {
     if (!s_FirebaseReady || !Firebase.ready()) return;
     
     // Cố gắng lấy khóa Mutex trong 1 giây, nếu bận thì bỏ qua lần này
     if (xSemaphoreTake(xMutex_Firebase, pdMS_TO_TICKS(1000)) == pdTRUE) {
         
-        // ĐÓNG GÓI JSON: Gửi 1 cục thay vì 4 request lẻ tẻ -> Tiết kiệm Quota mạng
+        // ĐÓNG GÓI JSON: Gửi 1 cục thay vì 4 request lẻ tẻ 
         FirebaseJson json;
         json.set("temperature", data.temperature);
         json.set("water_quality", data.tds);
@@ -193,12 +178,12 @@ void syncSensorDataToFirebase(const SensorData_t& data) {
         json.set("weight", data.weight);
         
         if (Firebase.updateNode(fbData, "/aquarium", json)) {
-            Serial.printf("[NetworkTask] ✓ Cập nhật Cảm biến OK (Temp:%.1f, TDS:%.1f)\n", data.temperature, data.tds);
+            Serial.printf("[NetworkTask] Cập nhật Cảm biến OK (Temp:%.1f, TDS:%.1f)\n", data.temperature, data.tds);
         } else {
-            Serial.printf("[NetworkTask] ⚠️ Cập nhật lỗi: %s\n", fbData.errorReason().c_str());
+            Serial.printf("[NetworkTask] Cập nhật lỗi: %s\n", fbData.errorReason().c_str());
         }
         
-        // ── Ghi Chart Log (Mỗi 60s) ──
+        // Ghi Chart Log (Mỗi 60s)
         static unsigned long s_lastChartSync = 0;
         if (millis() - s_lastChartSync > 60000 || s_lastChartSync == 0) {
             time_t now = time(nullptr);
@@ -215,9 +200,7 @@ void syncSensorDataToFirebase(const SensorData_t& data) {
     }
 }
 
-// ─────────────────────────────────────────────────────────
 //  TASK LOOP CHÍNH
-// ─────────────────────────────────────────────────────────
 void networkTaskLoop(void* unused) {
     // 1. CHẠY WIFIMANAGER TRƯỚC TIÊN (Chặn luồng cho đến khi có mạng hoặc timeout)
     connectWiFiManager();
@@ -278,11 +261,9 @@ void networkTaskLoop(void* unused) {
     }
 }
 
-}  // namespace
+} 
 
-// ============================================================
 //  HÀM PUBLIC
-// ============================================================
 
 void NetworkTask_init(UBaseType_t priority, uint16_t stackSize) {
     Serial.println("[NetworkTask_init] Tạo FreeRTOS task...");

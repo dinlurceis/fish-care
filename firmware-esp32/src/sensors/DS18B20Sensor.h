@@ -4,16 +4,14 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-// ============================================================
 //  CẢM BIẾN NHIỆT ĐỘ DS18B20
 //  Giao tiếp: OneWire
 //  Chân:      GPIO 18 (theo PROJECT_CONTEXT.md)
 //  
-//  🔍 GHI CHÚ THIẾT KẾ:
+//  GHI CHÚ THIẾT KẾ:
 //  - Đọc nhiệt độ 1 lần/2 giây → dữ liệu đã mượt
 //  - Thời gian đọc: ~750ms ở độ phân giải 12-bit
 //  - Không cần lọc nhiễu (thay đổi chậm, không spike)
-// ============================================================
 
 #define DS18B20_PIN         18
 #define DS18B20_ERROR_VAL  -127.0f  // Giá trị lỗi của DallasTemperature

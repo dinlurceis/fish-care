@@ -14,10 +14,8 @@
 #include "FeedingTask.h"
 #include "NetworkTask.h"
 
-// ============================================================
 //  GLOBAL QUEUE & SYNCHRONIZATION PRIMITIVES
 //  Công (Leader) khởi tạo - các task khác extern để dùng
-// ============================================================
 
 // Queue chứa 1 phần tử (SensorData mới nhất)
 // Hằng (SensorTask) WRITE → Hoàng (NetworkTask) + Duy (AutomationTask) READ
@@ -34,9 +32,7 @@ SemaphoreHandle_t xMutex_Firebase = nullptr;
 // Flag theo dõi trạng thái WiFi - Duy check để edge automation
 volatile bool isWiFiConnected = false;
 
-// ============================================================
 //  WATCHDOG & ERROR HANDLING
-// ============================================================
 void configureWatchdog() {
     // Cấu hình watchdog 20 giây
     esp_task_wdt_init(NETWORK_WDT_TIMEOUT_SEC, true);
@@ -44,9 +40,7 @@ void configureWatchdog() {
     Serial.println("[main] Watchdog configured: " + String(NETWORK_WDT_TIMEOUT_SEC) + "s timeout");
 }
 
-// ============================================================
 //  SETUP - Khởi tạo Hardware & FreeRTOS
-// ============================================================
 void setup() {
     Serial.begin(115200);
     Task_Delay(500);
@@ -135,10 +129,8 @@ void setup() {
     // Arduino framework tự gọi vTaskStartScheduler() sau setup()
 }
 
-// ============================================================
 //  LOOP - Chạy ở priority thấp nhất (Idle)
 //  Công có thể thêm monitoring logic ở đây nếu cần
-// ============================================================
 void loop() {
     // Mọi logic chính chạy trong FreeRTOS Tasks
     // loop() chạy ở priority 0 (Idle priority) - chỉ khi các task khác idle
