@@ -22,6 +22,7 @@ yarn-error.log*
 *.swp
 *.swo
 
+CODE_ANALYSIS_FIRMWARE.md
 PROJECT_CONTEXT.md
 compile_commands.json
 codecu.md

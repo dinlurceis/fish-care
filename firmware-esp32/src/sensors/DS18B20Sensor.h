@@ -7,7 +7,7 @@
 // ============================================================
 //  CẢM BIẾN NHIỆT ĐỘ DS18B20
 //  Giao tiếp: OneWire
-//  Chân:      GPIO 18 (theo PROJECT_CONTEXT.md)
+//  Chân:      GPIO 18
 //  
 //  🔍 GHI CHÚ THIẾT KẾ:
 //  - Đọc nhiệt độ 1 lần/2 giây → dữ liệu đã mượt

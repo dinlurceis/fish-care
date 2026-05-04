@@ -35,28 +35,3 @@ bool NetworkTask_IsWiFiConnected();
  * @return true nếu Firebase initialized & connected
  */
 bool NetworkTask_IsFirebaseConnected();
-
-/**
- * @brief Lấy số lượng sensor data còn lưu trong offline cache
- * @return uint16_t: số frame đang cached
- */
-uint16_t NetworkTask_GetOfflineCacheSize();
-
-/**
- * @brief Manually force sync offline cache (debug)
- * 
- * Thường không cần gọi, NetworkTask tự động sync
- */
-void NetworkTask_SyncOfflineCache();
-
-
-
-/**
- * @brief Push cảnh báo ngưỡng lên /notifications Firebase
- * @param type:    "water_quality" | "temperature" | "alert"
- * @param title:   Tiêu đề notification
- * @param message: Nội dung chi tiết
- *
- * Có debounce 10 phút để tránh spam cùng 1 loại alert.
- */
-void pushAlertToFirebase(const char* type, const char* title, const char* message);

@@ -15,22 +15,18 @@
 
 // 
 //  GLOBAL QUEUE & SYNCHRONIZATION PRIMITIVES
-//  Công (Leader) khởi tạo - các task khác extern để dùng
-// 
 
 // Queue chứa 1 phần tử (SensorData mới nhất)
-// (SensorTask) WRITE → Hoàng (NetworkTask) + Duy (AutomationTask) READ
 QueueHandle_t xQueue_SensorData = nullptr;
 
 // Queue lệnh điều khiển từ Firebase
-//  (NetworkTask) WRITE → Dũng (FeedingTask) + Duy (AutomationTask) READ
 QueueHandle_t xQueue_FeedCommands = nullptr;
 QueueHandle_t xQueue_AutoCommands = nullptr;
 
 // Mutex bảo vệ khi write Firebase để tránh race condition
 SemaphoreHandle_t xMutex_Firebase = nullptr;
 
-// Flag theo dõi trạng thái WiFi - Duy check để edge automation
+// Flag theo dõi trạng thái WiFi
 volatile bool isWiFiConnected = false;
 
 // 
@@ -50,15 +46,15 @@ void setup() {
     Serial.begin(115200);
     Task_Delay(500);
     
-   
-    Serial.println("  🐟 Fish-Care IoT System - Boot 🐟");
+    Serial.println("\n========================================");
+    Serial.println("   Fish-Care IoT System - Boot ");
     Serial.println("  FreeRTOS Multi-Task Architecture");
-    
+    Serial.println("========================================\n");
 
-    // ── 1. Cấu hình Watchdog 
+    // 1. Cấu hình Watchdog 
     configureWatchdog();
 
-    // ── 2. Tạo các Queue & Mutex 
+    // 2. Tạo các Queue & Mutex
     Serial.println("[BOOT] Creating IPC primitives...");
     
     // SensorData Queue: size=1 để luôn giữ data mới nhất
@@ -69,7 +65,7 @@ void setup() {
     Task_Delay(2000);
     ESP.restart(); // Lệnh reset an toàn của ESP32
 }
-    Serial.println(\"  xQueue_SensorData created\");
+    Serial.println(" xQueue_SensorData created");
 
     // Commands Queues: Mỗi consumer một queue riêng để tránh tranh giành lệnh
     xQueue_FeedCommands = xQueueCreate(5, sizeof(CommandData_t));
@@ -79,7 +75,7 @@ void setup() {
         Serial.println("[FATAL] Failed to create Command Queues!");
         while (true) { Task_Delay(1000); }
     }
-    Serial.println(\"  Command Queues (Feed + Auto) created\");
+    Serial.println(" Command Queues (Feed + Auto) created");
 
     // Firebase Mutex
     xMutex_Firebase = xSemaphoreCreateMutex();
@@ -87,7 +83,7 @@ void setup() {
         Serial.println("[FATAL] Failed to create xMutex_Firebase!");
         while (true) { Task_Delay(1000); }
     }
-    Serial.println(\"  xMutex_Firebase created\");
+    Serial.println("xMutex_Firebase created");
 
     // ── 3. Khởi động FreeRTOS Tasks với Priority Levels ─────
     Serial.println("\n[BOOT] Starting FreeRTOS tasks on Core 1...");
@@ -96,49 +92,44 @@ void setup() {
     // Tham số cuối cùng "1" = Core 1
     // Tham số thứ 5 = Priority (4 = Cao nhất, 1 = Thấp nhất)
     
-    // Priority 4 - FeedingTask HIGHEST
+    // Priority 4 - FeedingTask: HIGHEST
     // Phải cao nhất vì LoadCell interrupt cần phản ứng ngay
-    FeedingTask_init(4, 4096); 
-    // Priority 3 - NetworkTask : HIGH
+    FeedingTask_init(4, 4096);  
+    Serial.println("FeedingTask - Core 1, Priority 4 (HIGHEST)");
+    
+    // Priority 3 - NetworkTask: HIGH
     // Phải cao vì phải ping Firebase liên tục không đứt
-    NetworkTask_init(3, 8192);  //  - Core 1, Priority 3
+    NetworkTask_init(3, 8192);  // Core 1, Priority 3
+    Serial.println("NetworkTask - Core 1, Priority 3 (HIGH)");
     
-    
-    // Priority 2 - AutomationTask : MEDIUM
+    // Priority 2 - AutomationTask: MEDIUM
     // Check offline logic và motor automation
-    AutomationTask_init(2, 4096);  // - Core 1, Priority 2
+    AutomationTask_init(2, 4096);  // Core 1, Priority 2
+    Serial.println("AutomationTask - Core 1, Priority 2 (MEDIUM)");
     
-    
-    // Priority 1 - SensorTask : LOW
+    // Priority 1 - SensorTask: LOW
     // Đọc cảm biến định kỳ, priority thấp nhất
-    SensorTask_init(1, 4096);  //  - Core 1, Priority 1 (LOWEST)
-   
+    SensorTask_init(1, 4096);  // Core 1, Priority 1 (LOWEST)
+    Serial.println("SensorTask - Core 1, Priority 1 (LOWEST)");
+
     // ── 4. Cấu hình GPIO cho các module ─────────────────
     Serial.println("\n[BOOT] Configuring GPIO pins...");
-    // SensorTask sẽ setup GPIO 18, 34, 32 (OneWire, ADCs)
-    // FeedingTask sẽ setup GPIO 21, 22, 23, 14, 12 (LoadCell, Motor B)
-    // AutomationTask sẽ setup GPIO 5, 26, 27 (Motor A)
-    // NetworkTask sẽ init WiFi trong Task
     
-    Serial.println(\"  GPIO configuration deferred to task init functions\");
+    Serial.println(" GPIO configuration deferred to task init functions");
 
-    Serial.println("FreeRTOS Scheduler starting...");
+    Serial.println("\n========================================");
+    Serial.println(" FreeRTOS Scheduler starting...");
     Serial.println("  All tasks running in background");
-    Serial.println("  Công (Leader) monitoring system health");
-
+    Serial.println("========================================\n");
     
     // Arduino framework tự gọi vTaskStartScheduler() sau setup()
 }
 
 // 
 //  LOOP - Chạy ở priority thấp nhất (Idle)
-//  Công có thể thêm monitoring logic ở đây nếu cần
-// 
 void loop() {
     // Mọi logic chính chạy trong FreeRTOS Tasks
     // loop() chạy ở priority 0 (Idle priority) - chỉ khi các task khác idle
-    
-    
     
     vTaskDelay(pdMS_TO_TICKS(5000)); // Check mỗi 5 giây
 }
