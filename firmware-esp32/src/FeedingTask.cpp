@@ -5,16 +5,15 @@
 #include <time.h>
 
 //  FEEDINGTASK - Điều khiển Motor B (cho ăn) + LoadCell
-//  Chịu trách nhiệm: Dũng
 //  Chi tiết: 3 chế độ (Auto, Gram, Manual), Timeout 30s bảo vệ motor
 
 namespace {
 
 TaskHandle_t s_TaskHandle = nullptr;
 
-//────────────────────────────────────────────────────
+
 //  TRẠNG THÁI FEEDING - Theo dõi quá trình cho ăn
-//────────────────────────────────────────────────────
+
 
 // Chế độ feeding hiện tại
 enum FeedMode_e { FEED_IDLE = 0, FEED_AUTO = 1, FEED_GRAM = 2, FEED_MANUAL = 3 };
@@ -32,9 +31,9 @@ float s_GramStartWeight = 0.0f;
 float s_AutoStartWeight = 0.0f;
 unsigned long s_AutoStartTime = 0;
 
-//────────────────────────────────────────────────────
+
 //  LOADCELL HX711 - Cân nặng cám
-//────────────────────────────────────────────────────
+
 HX711 s_LoadCell;
 const float LOADCELL_SCALE_FACTOR = 505.4633;
 
@@ -48,9 +47,9 @@ float readWeightFromLoadCell() {
     return lastValidWeight; 
 }
 
-//────────────────────────────────────────────────────
+
 //  ĐIỀU KHIỂN MOTOR B (Cho ăn)
-//────────────────────────────────────────────────────
+
 
 void startMotor() {
     // Bật motor: ENB=HIGH, IN3=HIGH, IN4=LOW (quay tự do)
@@ -74,9 +73,9 @@ void stopMotor() {
 
 
 
-//────────────────────────────────────────────────────
+
 //  TASK LOOP CHÍNH
-//────────────────────────────────────────────────────
+
 void feedingTaskLoop(void* unused) {
     // Khởi tạo Hardware
     Serial.println("[FeedingTask] Khởi tạo Motor B + LoadCell...");
@@ -98,9 +97,9 @@ void feedingTaskLoop(void* unused) {
     // Vòng lặp chính
     for (;;) {
         
-        // ════════════════════════════════════════
+        
         //  XỬ LÝ LỆNH TỪ FIREBASE (qua Queue)
-        // ════════════════════════════════════════
+        
         CommandData_t cmd;
         memset(&cmd, 0, sizeof(cmd));
         if (xQueueReceive(xQueue_FeedCommands, &cmd, 0) == pdPASS) {
@@ -161,9 +160,9 @@ void feedingTaskLoop(void* unused) {
         
         float currentWeight = readWeightFromLoadCell();
         
-        // ════════════════════════════════════════
+        
         //  MODE AUTO: Cho ăn lúc 6h00 & 17h00 (Chỉ kích hoạt 1 lần mỗi khung giờ)
-        // ════════════════════════════════════════
+        
         if (s_CurrentMode == FEED_AUTO) {
             static int lastFeedHour = -1;
             
@@ -212,9 +211,9 @@ void feedingTaskLoop(void* unused) {
             }
         }
         
-        // ════════════════════════════════════════
+        
         //  MODE GRAM: Cho ăn cho đến đủ số gram
-        // ════════════════════════════════════════
+        
         else if (s_CurrentMode == FEED_GRAM) {
             if (!s_MotorRunning && s_GramTarget > 0) {
                 // Bắt đầu cho ăn
@@ -265,9 +264,9 @@ void feedingTaskLoop(void* unused) {
             }
         }
         
-        // ════════════════════════════════════════
+        
         //  MODE MANUAL: Bật/tắt tay
-        // ════════════════════════════════════════
+        
         else if (s_CurrentMode == FEED_MANUAL) {
             // Motor sẽ được điều khiển qua lệnh Firebase
             // Chỉ kiểm timeout bảo vệ
@@ -277,9 +276,9 @@ void feedingTaskLoop(void* unused) {
             }
         }
         
-        // ════════════════════════════════════════
+        
         //  MODE IDLE: Không làm gì
-        // ════════════════════════════════════════
+        
         else {
             if (s_MotorRunning) {
                 stopMotor();
@@ -301,7 +300,7 @@ void feedingTaskLoop(void* unused) {
     }
 }
 
-}  // namespace
+} 
 
 //  HÀM PUBLIC
 

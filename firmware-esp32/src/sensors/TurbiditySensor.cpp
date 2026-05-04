@@ -11,7 +11,7 @@ void TurbiditySensor::begin() {
 }
 
 int TurbiditySensor::readTurbidity() {
-    // Lọc trung vị (Median Filter) với 15 mẫu (phần 2.5.1)
+    // Lọc trung vị (Median Filter) với 15 mẫu
     int samples[15];
     for(int i = 0; i < 15; i++) {
         samples[i] = analogRead(TURBIDITY_PIN);

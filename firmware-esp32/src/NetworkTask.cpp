@@ -43,7 +43,6 @@ void connectWiFiManager() {
     wm.setClass("invert");
 
     // Khởi tạo trạm phát WiFi ảo
-    // Tên WiFi: FishCare_AP  |  Mật khẩu: 12345678
     Serial.println("[NetworkTask] Đang tìm WiFi cũ... Nếu không thấy sẽ phát WiFi 'FishCare_AP'");
     bool res = wm.autoConnect("FishCare_AP", "12345678"); 
     //wm.resetSettings();
@@ -118,7 +117,7 @@ void firebaseCallback(StreamData data) {
 
 void streamTimeoutCallback(bool timeout) {
     if (timeout) {
-        Serial.println("[Firebase_Stream] ⏳ Timeout - Đang kết nối lại Stream...");
+        Serial.println("[Firebase_Stream] Timeout - Đang kết nối lại Stream...");
         s_FirebaseStreamStarted = false; // Đánh dấu để vòng lặp chính tự tạo lại stream
     }
 }
